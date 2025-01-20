@@ -309,6 +309,8 @@ module MKL
         β_old = copy(β)  # Initialize β_old for convergence check
         α = zeros(n)     # Initialize α
         K_combined = compute_combined_kernel(K_list, β)
+        list_alphas = []
+        list_betas = []
         
 
         for iter in 1:max_iter
@@ -331,9 +333,12 @@ module MKL
                 break
             end
             β_old = copy(β)
+            push!(list_alphas, copy(α))
+            push!(list_betas, copy(β))
+
         end
 
-        return α, β, K_combined
+        return α, β, K_combined, list_alphas, list_betas
     end
 
 
