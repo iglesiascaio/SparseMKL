@@ -519,11 +519,12 @@ function train_svm_libsvm(K::Matrix{Float64}, y::Vector{Float64}, C::Float64)
     sv_coef = model.coefs[:, 1]   # for 2-class SVM, single column
     for (local_i, global_i) in enumerate(sv_inds)
         # LIBSVM encodes alpha_i as (sv_coef[i] * original_label_of_SV[i]).
-        α_res[global_i] = sv_coef[local_i] * y[global_i]
+        ## however, LIBSVM sometimes flips the sign of the label, so we take abs
+        α_res[global_i] = abs(sv_coef[local_i])
     end
 
-    # 5) The intercept in LIBSVM is -rho[1] for 2-class SVM
-    b_val = -model.rho[1]
+    # 5) The intercept in LIBSVM is rho[1] for 2-class SVM
+    b_val = model.rho[1]
 
     return α_res, b_val
 end
@@ -592,15 +593,15 @@ function train_interpretable_mkl(
 
         # 1) Solve for α
         if solver_type == :SMO
-            α, b = train_svm_smo!(K_combined, y, C; tol=tolerance, eps=1e-3, max_passes=5)
+            α, _ = train_svm_smo!(K_combined, y, C; tol=tolerance, eps=1e-3, max_passes=5)
 
         elseif solver_type == :GUROBI
             @assert model !== nothing "Gurobi model not initialized!"
-            α, b = train_svm_gurobi!(model, α_vars, K_combined, y)
+            α, _ = train_svm_gurobi!(model, α_vars, K_combined, y)
 
         elseif solver_type == :LIBSVM
             # LIBSVM expects a symmetric kernel => K_combined is sym by design
-            α, b = train_svm_libsvm(K_combined, y, C)
+            α, _ = train_svm_libsvm(K_combined, y, C)
 
         else
             error("Unknown solver_type=$solver_type. Choose :SMO, :GUROBI, or :LIBSVM.")
