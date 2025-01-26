@@ -93,9 +93,9 @@ module GetData
         )
 
         # Filter half of the dataset randomly
-        Random.seed!(123)  # Set random seed for reproducibility
+        Random.seed!(456)  # Set random seed for reproducibility
         n_rows = size(adult, 1)
-        sample_indices = sample(1:n_rows, Int(floor(n_rows / 20)), replace = false)
+        sample_indices = sample(1:n_rows, Int(floor(n_rows / 10)), replace = false)
         adult_filtered = adult[sample_indices, :]
 
         # Encode labels as +1 and -1 for binary classification (>50K vs. <=50K)
