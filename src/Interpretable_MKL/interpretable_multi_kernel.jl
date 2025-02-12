@@ -533,24 +533,6 @@ end
 ################################################################################
 #        M A I N   I N T E R P R E T A B L E   M K L   T R A I N I N G 
 ################################################################################
-
-"""
-    train_interpretable_mkl(
-        X, y, C, K_list, λ; 
-        max_iter=100, tolerance=1e-5, k0=3, sum_beta_val=1.0,
-        solver_type=:SMO, beta_method=:gssp
-    )
-
-Trains an MKL-SVM by alternating:
-1) α-update (SVM dual) via `:SMO`, `:GUROBI`, or `:LIBSVM`.
-2) β-update (MKL weighting) via `:hard`, `:proximal`, or `:gssp`.
-
-We forcibly symmetrize the combined kernel for each iteration
-to avoid "Matrix must be symmetric" errors in LIBSVM.
-
-Stops after `max_iter` or if β changes less than `tolerance`.
-Returns `(α, β, K_combined, list_alphas, list_betas)`.
-"""
 function train_interpretable_mkl(
     X::Matrix{Float64},
     y::Vector{Float64},
@@ -572,10 +554,12 @@ function train_interpretable_mkl(
     β     = ones(q) ./ q
     β_old = copy(β)
     α     = zeros(n)
+    α_old = copy(α)
 
     # Build initial combined kernel
     K_combined = compute_combined_kernel(K_list, β)
     symmetrize!(K_combined)
+    K_combined_old = copy(K_combined)
 
     # If using Gurobi, prepare the model
     model  = nothing
@@ -587,8 +571,9 @@ function train_interpretable_mkl(
     list_alphas = Vector{Vector{Float64}}()
     list_betas  = Vector{Vector{Float64}}()
 
-    # Damping parameter for smoothing β updates
-    # inertia = 0.3
+    # Initialize objective value
+    obj_old = Inf
+    obj_best = Inf
 
     for iter in 1:max_iter
         println("Iteration $iter...")
@@ -605,9 +590,6 @@ function train_interpretable_mkl(
         else
             error("Unknown beta_method=$beta_method. Choose :hard, :proximal, or :gssp.")
         end
-
-        # Apply smoothing (inertia) to β
-        # β = inertia * β_old .+ (1.0 - inertia) .* β
 
         ###################################################################
         # 2) Recompute combined kernel with the updated β
@@ -630,28 +612,32 @@ function train_interpretable_mkl(
         end
 
         ###################################################################
-        # 4) Print metrics at the end of the iteration
+        # 4) Compute and check objective function
         ###################################################################
         obj = compute_objective(α, y, K_combined, β)
         println("Objective = ", obj)
         println("β = ", β)
         println("sum(α) = ", sum(α))
-        println("||β - β_old|| = ", norm(β - β_old))
 
-        # Check convergence in β
-        if iter > 1 && norm(β - β_old) < tolerance
-            println("Converged after $iter iterations.")
-            println("Final β = ", β)
-            println("Final objective = ", obj)
-            break
+        # If the objective function did not decrease, return the previous best solution
+        if obj >= obj_best - tolerance
+            println("Stopping criterion met: Objective function did not decrease.")
+            println("Returning the best solution found so far.")
+            println("Final β = ", β_old)
+            println("Final objective = ", obj_best)
+            return α_old, β_old, K_combined_old, list_alphas, list_betas
         end
 
+        # Update best known solution
+        obj_best = obj
+        α_old .= α
         β_old .= β
+        K_combined_old .= K_combined
+
         push!(list_alphas, copy(α))
         push!(list_betas,  copy(β))
     end
 
     return α, β, K_combined, list_alphas, list_betas
 end
-
 end # module InterpretableMKL
