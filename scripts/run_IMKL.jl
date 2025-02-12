@@ -13,14 +13,6 @@ using .InterpretableMKL: sparse_optimize_beta, train_interpretable_mkl
 
 X_train, y_train, X_test, y_test = get_adult_data(frac=0.33)
 
-# Define parameters
-C = 1.5
-k0 = 3
-λ = 200.0  # Regularization for β
-max_iter = 50
-sum_beta_val = 1.0
-tolerance = 1e-2
-
 # Define kernel specifications
 kernels = [
     Dict(:type => "linear", :params => Dict()),
@@ -28,10 +20,45 @@ kernels = [
     Dict(:type => "polynomial", :params => Dict(:degree => 2, :c => 1.0)),
     Dict(:type => "rbf", :params => Dict(:gamma => 0.5)),
     Dict(:type => "rbf", :params => Dict(:gamma => 0.3)),
-    Dict(:type => "rbf", :params => Dict(:gamma => 0.1))
-    
+    # Dict(:type => "rbf", :params => Dict(:gamma => 0.1)),
+    Dict(:type => "sigmoid", :params => Dict(:gamma => 0.5, :c0 => 1.0)),
+    Dict(:type => "laplacian", :params => Dict(:gamma => 0.3)),
+    # Dict(:type => "chi_squared", :params => Dict(:gamma => 0.2))
     
 ]
+
+# Define parameters
+C = 1
+k0 = 3
+λ = 200.0 #10000/sqrt(length(kernels))  # Regularization for β
+max_iter = 50
+sum_beta_val = 1.0
+tolerance = 1e-2
+
+
+# kernels = [
+#     Dict(:type => "linear", :params => Dict()),
+#     Dict(:type => "polynomial", :params => Dict(:degree => 3, :c => 1.0)),
+#     Dict(:type => "polynomial", :params => Dict(:degree => 2, :c => 0.5)),
+#     Dict(:type => "polynomial", :params => Dict(:degree => 4, :c => 1.5)),
+#     Dict(:type => "polynomial", :params => Dict(:degree => 5, :c => 2.0)),
+#     Dict(:type => "rbf", :params => Dict(:gamma => 0.5)),
+#     Dict(:type => "rbf", :params => Dict(:gamma => 0.3)),
+#     Dict(:type => "rbf", :params => Dict(:gamma => 0.1)),
+#     Dict(:type => "rbf", :params => Dict(:gamma => 0.05)),
+#     Dict(:type => "rbf", :params => Dict(:gamma => 1.0)),
+#     # Dict(:type => "sigmoid", :params => Dict(:gamma => 0.5, :c0 => 1.0)),
+#     # Dict(:type => "sigmoid", :params => Dict(:gamma => 0.8, :c0 => 0.5)),
+#     # Dict(:type => "sigmoid", :params => Dict(:gamma => 0.2, :c0 => 1.2)),
+#     # Dict(:type => "laplacian", :params => Dict(:gamma => 0.5)),
+#     # Dict(:type => "laplacian", :params => Dict(:gamma => 0.3)),
+#     # Dict(:type => "chi_squared", :params => Dict(:gamma => 0.5)),
+#     # Dict(:type => "chi_squared", :params => Dict(:gamma => 0.8)),
+#     # Dict(:type => "chi_squared", :params => Dict(:gamma => 0.2)),
+#     # Dict(:type => "laplacian", :params => Dict(:gamma => 0.7)),
+#     # Dict(:type => "chi_squared", :params => Dict(:gamma => 0.1))
+
+# ]
 
 @time begin
     # Compute kernels for training and test
