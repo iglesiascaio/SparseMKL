@@ -20,10 +20,10 @@ kernels = [
     Dict(:type => "polynomial", :params => Dict(:degree => 2, :c => 1.0)),
     Dict(:type => "rbf", :params => Dict(:gamma => 0.5)),
     Dict(:type => "rbf", :params => Dict(:gamma => 0.3)),
-    # Dict(:type => "rbf", :params => Dict(:gamma => 0.1)),
+    Dict(:type => "rbf", :params => Dict(:gamma => 0.1)),
     Dict(:type => "sigmoid", :params => Dict(:gamma => 0.5, :c0 => 1.0)),
     Dict(:type => "laplacian", :params => Dict(:gamma => 0.3)),
-    # Dict(:type => "chi_squared", :params => Dict(:gamma => 0.2))
+    Dict(:type => "chi_squared", :params => Dict(:gamma => 0.2))
     
 ]
 
