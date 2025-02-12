@@ -94,32 +94,32 @@ module MKL
     function compute_kernels(X1::AbstractMatrix, X2::AbstractMatrix, kernels::AbstractVector)
         """
         Compute multiple kernels for given data matrices X1 and X2 efficiently.
-
+    
         Parameters:
             X1: Matrix of size (n1, d) - Data on one side of the kernel.
             X2: Matrix of size (n2, d) - Data on the other side of the kernel.
             kernels: Vector of Dicts where each Dict specifies:
-                - :type (String): Type of kernel ("linear", "polynomial", "rbf").
+                - :type (String): Type of kernel ("linear", "polynomial", "rbf", "sigmoid", "laplacian", "chi_squared").
                 - :params (Dict): Hyperparameters for the kernel (e.g., degree, c, gamma).
-
+    
         Returns:
             Vector of kernel matrices corresponding to the specified kernels.
         """
         # Determine which computations are necessary
-        need_linear_or_poly = any(k[:type] in ["linear", "polynomial"] for k in kernels)
-        need_rbf = any(k[:type] == "rbf" for k in kernels)
+        need_linear_or_poly = any(k[:type] in ["linear", "polynomial", "sigmoid"] for k in kernels)
+        need_rbf_or_laplacian = any(k[:type] in ["rbf", "laplacian"] for k in kernels)
+        need_chi_squared = any(k[:type] == "chi_squared" for k in kernels)
         
-        # Precompute X1*X2' if needed for linear, polynomial, and RBF
+        # Precompute X1*X2' if needed for linear, polynomial, sigmoid
         X1X2t = nothing
-        if need_linear_or_poly || need_rbf
+        if need_linear_or_poly
             X1X2t = X1 * X2'  # expensive operation done once
         end
         
-        # Precompute squared norms if RBF is needed
+        # Precompute squared norms if RBF or Laplacian is needed
         X1_sq = nothing
         X2_sq = nothing
-        if need_rbf
-            # sum of squares of each row of X1 and X2
+        if need_rbf_or_laplacian
             X1_sq = sum(X1.^2, dims=2)
             X2_sq = sum(X2.^2, dims=2)
         end
@@ -130,33 +130,41 @@ module MKL
             params = kernel[:params]
             
             if kernel_type == "linear"
-                # Linear kernel: K = X1 * X2'
-                # Already computed as X1X2t
                 kernel_matrices[i] = X1X2t
                 
             elseif kernel_type == "polynomial"
-                # Polynomial kernel: (X1*X2' + c)^degree
                 degree = get(params, :degree, 3)
                 c = get(params, :c, 1.0)
-                # Use precomputed X1X2t
                 kernel_matrices[i] = (X1X2t .+ c) .^ degree
                 
             elseif kernel_type == "rbf"
-                # RBF kernel: exp(-gamma * ||x1 - x2||^2)
                 gamma = get(params, :gamma, 1.0)
-                # dists = X1_sq - 2*X1X2t + X2_sq'
-                # Both X1_sq and X2_sq are column vectors; ensure X2_sq transposed for broadcasting.
                 dists = X1_sq .- (2 .* X1X2t) .+ X2_sq'
                 kernel_matrices[i] = exp.(-gamma .* dists)
+                
+            elseif kernel_type == "sigmoid"
+                gamma = get(params, :gamma, 1.0)
+                c0 = get(params, :c0, 0.0)
+                kernel_matrices[i] = tanh.(gamma .* X1X2t .+ c0)
+                
+            elseif kernel_type == "laplacian"
+                gamma = get(params, :gamma, 1.0)
+                dists = sum(abs.(X1[:, i] .- X2[:, i]') for i in 1:size(X1, 2))
+                kernel_matrices[i] = exp.(-gamma .* dists)
+                
+            elseif kernel_type == "chi_squared"
+                gamma = get(params, :gamma, 1.0)
+                chi_sq_dists = sum(((X1[:, i] .- X2[:, i]').^2) ./ (X1[:, i] .+ X2[:, i]') for i in 1:size(X1, 2))
+                kernel_matrices[i] = exp.(-gamma .* chi_sq_dists)
                 
             else
                 error("Unsupported kernel type: $kernel_type")
             end
         end
-
+    
         return kernel_matrices
     end
-
+    
 
     # Train SVM model with kernel options
     function train_svm(X, y, C, kernel_type; degree=3, gamma=1.0, K_combined=nothing)
