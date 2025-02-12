@@ -568,17 +568,16 @@ function train_interpretable_mkl(
     n = size(X,1)
     q = length(K_list)
 
-    β      = ones(q)./q
-    β_old  = copy(β)
-    α      = zeros(n)
-    b      = 0.0
+    # Initialize β and α
+    β     = ones(q) ./ q
+    β_old = copy(β)
+    α     = zeros(n)
 
-    # Build first combined kernel
+    # Build initial combined kernel
     K_combined = compute_combined_kernel(K_list, β)
-
     symmetrize!(K_combined)
 
-    # If using Gurobi, build the model once:
+    # If using Gurobi, prepare the model
     model  = nothing
     α_vars = Vector{VariableRef}()
     if solver_type == :GUROBI
@@ -588,54 +587,64 @@ function train_interpretable_mkl(
     list_alphas = Vector{Vector{Float64}}()
     list_betas  = Vector{Vector{Float64}}()
 
+    # Damping parameter for smoothing β updates
+    # inertia = 0.3
+
     for iter in 1:max_iter
         println("Iteration $iter...")
 
-        # 1) Solve for α
-        if solver_type == :SMO
-            α, _ = train_svm_smo!(K_combined, y, C; tol=tolerance, eps=1e-3, max_passes=5)
-
-        elseif solver_type == :GUROBI
-            @assert model !== nothing "Gurobi model not initialized!"
-            α, _ = train_svm_gurobi!(model, α_vars, K_combined, y)
-
-        elseif solver_type == :LIBSVM
-            # LIBSVM expects a symmetric kernel => K_combined is sym by design
-            α, _ = train_svm_libsvm(K_combined, y, C)
-
-        else
-            error("Unknown solver_type=$solver_type. Choose :SMO, :GUROBI, or :LIBSVM.")
-        end
-
-        # 2) Optimize β
+        ###################################################################
+        # 1) Optimize β (using the current α)
+        ###################################################################
         if beta_method == :hard
             β = sparse_optimize_beta(K_list, α, y, λ, k0)
         elseif beta_method == :proximal
-            β = sparse_optimize_beta_proximal(K_list, α, y, β_old, 15.0, k0, λ)
+            β = sparse_optimize_beta_proximal(K_list, α, y, β_old, 100.0, k0, λ)
         elseif beta_method == :gssp
             β = sparse_optimize_beta_gssp(K_list, α, y, λ, k0, sum_beta_val)
         else
             error("Unknown beta_method=$beta_method. Choose :hard, :proximal, or :gssp.")
         end
 
-        # 3) Recompute combined kernel (and symmetrize)
+        # Apply smoothing (inertia) to β
+        # β = inertia * β_old .+ (1.0 - inertia) .* β
+
+        ###################################################################
+        # 2) Recompute combined kernel with the updated β
+        ###################################################################
         K_combined = compute_combined_kernel(K_list, β)
-
         symmetrize!(K_combined)
-        
 
-        # 4) Check convergence in β
-        if iter>1 && norm(β - β_old) < tolerance
-            println("Converged after $iter iterations.")
-            println("Final β = ", β)
-            println("Final objective = ", compute_objective(α, y, K_combined, β))
-            break
+        ###################################################################
+        # 3) Solve for α (SVM subproblem) with the new K_combined
+        ###################################################################
+        if solver_type == :SMO
+            α, _ = train_svm_smo!(K_combined, y, C; tol=tolerance, eps=1e-3, max_passes=5)
+        elseif solver_type == :GUROBI
+            @assert model !== nothing "Gurobi model not initialized!"
+            α, _ = train_svm_gurobi!(model, α_vars, K_combined, y)
+        elseif solver_type == :LIBSVM
+            α, _ = train_svm_libsvm(K_combined, y, C)
+        else
+            error("Unknown solver_type=$solver_type. Choose :SMO, :GUROBI, or :LIBSVM.")
         end
 
-        println("β=", β)
-        println("sum(α)=", sum(α))
-        println("Objective=", compute_objective(α, y, K_combined, β))
-        println("||β - β_old||=", norm(β - β_old))
+        ###################################################################
+        # 4) Print metrics at the end of the iteration
+        ###################################################################
+        obj = compute_objective(α, y, K_combined, β)
+        println("Objective = ", obj)
+        println("β = ", β)
+        println("sum(α) = ", sum(α))
+        println("||β - β_old|| = ", norm(β - β_old))
+
+        # Check convergence in β
+        if iter > 1 && norm(β - β_old) < tolerance
+            println("Converged after $iter iterations.")
+            println("Final β = ", β)
+            println("Final objective = ", obj)
+            break
+        end
 
         β_old .= β
         push!(list_alphas, copy(α))
