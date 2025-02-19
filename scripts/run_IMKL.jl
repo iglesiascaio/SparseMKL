@@ -13,9 +13,6 @@ macro maybe_profile(expr)
     end
 end
 
-############################
-# 1) RUN YOUR EXISTING CODE
-############################
 
 include("../data/get_data.jl")
 using .GetData: get_adult_data, get_dataset
@@ -28,8 +25,8 @@ include("../src/Interpretable_MKL/interpretable_multi_kernel.jl")
 using .InterpretableMKL: sparse_optimize_beta, train_interpretable_mkl
 
 println("Loading data...")
-X_train, y_train, X_test, y_test = get_dataset(:adult; force_download=false, frac=0.33, train_ratio=0.8)
-# X_train, y_train, X_test, y_test = get_dataset(:iris; force_download=false, frac=1.00, train_ratio=0.8)
+# X_train, y_train, X_test, y_test = get_dataset(:adult; force_download=false, frac=0.33, train_ratio=0.8)
+X_train, y_train, X_test, y_test = get_dataset(:spambase; force_download=false, frac=1.00, train_ratio=0.8)
 # X_train, y_train, X_test, y_test = get_dataset(:wine; force_download=false, frac=1.00, train_ratio=0.8)
 
 @infiltrate
@@ -39,12 +36,17 @@ kernels = [
     Dict(:type => "linear", :params => Dict()),
     Dict(:type => "polynomial", :params => Dict(:degree => 3, :c => 1.0)),
     Dict(:type => "polynomial", :params => Dict(:degree => 2, :c => 1.0)),
+    # Dict(:type => "polynomial", :params => Dict(:degree => 5, :c => 1.0)),
+    # Dict(:type => "polynomial", :params => Dict(:degree => 7, :c => 1.0)),
     Dict(:type => "rbf",        :params => Dict(:gamma => 0.5)),
     Dict(:type => "rbf",        :params => Dict(:gamma => 0.3)),
     Dict(:type => "rbf",        :params => Dict(:gamma => 0.1)),
     Dict(:type => "sigmoid",    :params => Dict(:gamma => 0.5, :c0 => 1.0)),
+    # Dict(:type => "sigmoid",    :params => Dict(:gamma => 0.7, :c0 => 1.1)),
     Dict(:type => "laplacian",  :params => Dict(:gamma => 0.3)),
-    Dict(:type => "chi_squared",:params => Dict(:gamma => 0.2))
+    # Dict(:type => "laplacian",  :params => Dict(:gamma => 0.1)),
+    Dict(:type => "chi_squared",:params => Dict(:gamma => 0.2)),
+    # Dict(:type => "chi_squared",:params => Dict(:gamma => 0.3)),
 ]
 
 # Hyperparameters
