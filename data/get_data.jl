@@ -4,41 +4,37 @@ using CSV
 using DataFrames
 using Random
 using Statistics
-using StatsBase    # for sample()
-using Downloads    # for download()
-using Printf       # for formatted messages if needed
+using StatsBase    # used for 'sample', not 'dummyvar'
+using Downloads
+using Printf
 
 # Define the directory for local data storage.
 const DATA_DIR = "../data"
 
 # ----------------------------------------------------------------------------
-# 1) Dataset Configuration Dictionary (15 datasets)
+# 1) Dataset Configuration Dictionary
 # ----------------------------------------------------------------------------
-# Each dataset is defined by a NamedTuple containing:
-#   - url: URL string from UCI.
-#   - local_filename: File name to store locally.
-#   - has_header: Whether the CSV file has a header row.
-#   - rename_map: A Vector{Symbol} specifying new column names.
-#   - label_fn: A function that takes a DataFrame row and returns 1 or -1.
-#   - numeric_cols: A Vector{Symbol} with the names of columns to be used as features.
-# ----------------------------------------------------------------------------
+# We'll keep the same dictionary structure. 
+# The only changes are that we no longer rely on StatsBase.dummyvar.
+# Instead, we define a custom function below to handle one-hot encoding.
 
 const DATASET_CONFIG = Dict{Symbol, NamedTuple}(
-    # 1) IRIS
+    # 1) IRIS (Originally 3 classes => artificially turned into binary)
     :iris => (
         url            = "https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data",
         local_filename = "iris.csv",
         has_header     = false,
         rename_map     = [:sepal_length, :sepal_width, :petal_length, :petal_width, :species],
         label_fn       = row -> (row[:species] == "Iris-setosa" ? 1 : -1),
-        numeric_cols   = [:sepal_length, :sepal_width]
+        numeric_cols   = [:sepal_length, :sepal_width],
+        categorical_cols = []
     ),
 
-    # 2) ADULT (Note: using has_header=true to skip the header row already present locally)
+    # 2) ADULT
     :adult => (
         url            = "https://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.data",
         local_filename = "adult.csv",
-        has_header     = true,   # Updated to true to avoid parsing header strings as data
+        has_header     = true,
         rename_map     = [
             :age,
             :workclass,
@@ -57,10 +53,20 @@ const DATASET_CONFIG = Dict{Symbol, NamedTuple}(
             :income
         ],
         label_fn       = row -> (row[:income] == " >50K" ? 1 : -1),
-        numeric_cols   = [:age, :education_num, :capital_gain, :capital_loss, :hours_per_week]
+        numeric_cols   = [:age, :education_num, :capital_gain, :capital_loss, :hours_per_week],
+        categorical_cols = [
+            # :workclass, 
+            # :education, 
+            # :marital_status, 
+            # :occupation,
+            # :relationship, 
+            :race, 
+            :sex, 
+            # :native_country, 
+        ]
     ),
 
-    # 3) WINE (binarized: class 1 → +1; others → -1)
+    # 3) WINE (Originally 3 classes => forcibly turned into binary)
     :wine => (
         url            = "https://archive.ics.uci.edu/ml/machine-learning-databases/wine/wine.data",
         local_filename = "wine.csv",
@@ -75,10 +81,11 @@ const DATASET_CONFIG = Dict{Symbol, NamedTuple}(
             :alcohol, :malic_acid, :ash, :ash_alcalinity, :magnesium,
             :total_phenols, :flavanoids, :nonflav_phenols, :proanthocyanins,
             :color_intensity, :hue, :od280_od315, :proline
-        ]
+        ],
+        categorical_cols = []
     ),
 
-    # 4) BREASTCANCER (Wisconsin Diagnostic, wdbc.data; M = +1, B = -1)
+    # 4) BREASTCANCER
     :breastcancer => (
         url            = "https://archive.ics.uci.edu/ml/machine-learning-databases/breast-cancer-wisconsin/wdbc.data",
         local_filename = "breastcancer.csv",
@@ -96,7 +103,8 @@ const DATASET_CONFIG = Dict{Symbol, NamedTuple}(
             :feat10, :feat11, :feat12, :feat13, :feat14, :feat15, :feat16, :feat17,
             :feat18, :feat19, :feat20, :feat21, :feat22, :feat23, :feat24, :feat25,
             :feat26, :feat27, :feat28, :feat29, :feat30
-        ]
+        ],
+        categorical_cols = []
     ),
 
     # 5) IONOSPHERE
@@ -104,9 +112,10 @@ const DATASET_CONFIG = Dict{Symbol, NamedTuple}(
         url            = "https://archive.ics.uci.edu/ml/machine-learning-databases/ionosphere/ionosphere.data",
         local_filename = "ionosphere.csv",
         has_header     = false,
-        rename_map     = [Symbol("feat$i") for i in 1:34] ∪ [:label],
+        rename_map     = vcat([Symbol("feat$i") for i in 1:34], [:label]),
         label_fn       = row -> (row[:label] == "g" ? 1 : -1),
-        numeric_cols   = [Symbol("feat$i") for i in 1:34]
+        numeric_cols   = [Symbol("feat$i") for i in 1:34],
+        categorical_cols = []
     ),
 
     # 6) SPAMBASE
@@ -114,9 +123,10 @@ const DATASET_CONFIG = Dict{Symbol, NamedTuple}(
         url            = "https://archive.ics.uci.edu/ml/machine-learning-databases/spambase/spambase.data",
         local_filename = "spambase.csv",
         has_header     = false,
-        rename_map     = [Symbol("feat$i") for i in 1:57] ∪ [:is_spam],
+        rename_map     = vcat([Symbol("feat$i") for i in 1:57], [:is_spam]),
         label_fn       = row -> (row[:is_spam] == 1 ? 1 : -1),
-        numeric_cols   = [Symbol("feat$i") for i in 1:57]
+        numeric_cols   = [Symbol("feat$i") for i in 1:57],
+        categorical_cols = []
     ),
 
     # 7) BANKNOTE AUTHENTICATION
@@ -126,7 +136,8 @@ const DATASET_CONFIG = Dict{Symbol, NamedTuple}(
         has_header     = false,
         rename_map     = [:variance, :skewness, :curtosis, :entropy, :class],
         label_fn       = row -> (row[:class] == 1 ? 1 : -1),
-        numeric_cols   = [:variance, :skewness, :curtosis, :entropy]
+        numeric_cols   = [:variance, :skewness, :curtosis, :entropy],
+        categorical_cols = []
     ),
 
     # 8) PIMA INDIANS DIABETES
@@ -139,11 +150,14 @@ const DATASET_CONFIG = Dict{Symbol, NamedTuple}(
             :serum_insulin, :bmi, :pedigree, :age, :class
         ],
         label_fn       = row -> (row[:class] == 1 ? 1 : -1),
-        numeric_cols   = [:n_pregnant, :plasma_glucose, :diastolic_bp, :triceps_thickness,
-                          :serum_insulin, :bmi, :pedigree, :age]
+        numeric_cols   = [
+            :n_pregnant, :plasma_glucose, :diastolic_bp, :triceps_thickness,
+            :serum_insulin, :bmi, :pedigree, :age
+        ],
+        categorical_cols = []
     ),
 
-    # 9) HEART DISEASE (Cleveland)
+    # 9) HEART DISEASE (Cleveland) - multi-class turned to binary
     :heart => (
         url            = "https://archive.ics.uci.edu/ml/machine-learning-databases/heart-disease/processed.cleveland.data",
         local_filename = "heart.csv",
@@ -153,18 +167,22 @@ const DATASET_CONFIG = Dict{Symbol, NamedTuple}(
             :exang, :oldpeak, :slope, :ca, :thal, :num
         ],
         label_fn       = row -> (row[:num] == 0 ? -1 : 1),
-        numeric_cols   = [:age, :sex, :cp, :trestbps, :chol, :fbs, :restecg, :thalach,
-                          :exang, :oldpeak, :slope, :ca, :thal]
+        numeric_cols   = [
+            :age, :sex, :cp, :trestbps, :chol, :fbs, :restecg, :thalach,
+            :exang, :oldpeak, :slope, :ca, :thal
+        ],
+        categorical_cols = []
     ),
 
-    # 10) GERMAN CREDIT (numeric version)
+    # 10) GERMAN CREDIT (numeric version) - 2 classes coded as 1/2
     :german => (
         url            = "https://archive.ics.uci.edu/ml/machine-learning-databases/statlog/german/german.data-numeric",
         local_filename = "german_numeric.csv",
         has_header     = false,
-        rename_map     = [Symbol("feat$i") for i in 1:24] ∪ [:class],
+        rename_map     = vcat([Symbol("feat$i") for i in 1:24], [:class]),
         label_fn       = row -> (row[:class] == 1 ? 1 : -1),
-        numeric_cols   = [Symbol("feat$i") for i in 1:24]
+        numeric_cols   = [Symbol("feat$i") for i in 1:24],
+        categorical_cols = []
     ),
 
     # 11) HABERMAN
@@ -174,7 +192,8 @@ const DATASET_CONFIG = Dict{Symbol, NamedTuple}(
         has_header     = false,
         rename_map     = [:age, :operation_year, :positive_axillary_nodes, :survival_status],
         label_fn       = row -> (row[:survival_status] == 1 ? 1 : -1),
-        numeric_cols   = [:age, :operation_year, :positive_axillary_nodes]
+        numeric_cols   = [:age, :operation_year, :positive_axillary_nodes],
+        categorical_cols = []
     ),
 
     # 12) MAMMOGRAPHIC MASSES
@@ -184,17 +203,8 @@ const DATASET_CONFIG = Dict{Symbol, NamedTuple}(
         has_header     = false,
         rename_map     = [:BI_RADS, :age, :shape, :margin, :density, :severity],
         label_fn       = row -> (row[:severity] == 1 ? 1 : -1),
-        numeric_cols   = [:BI_RADS, :age, :shape, :margin, :density]
-    ),
-
-    # 13) BLOOD TRANSFUSION
-    :blood => (
-        url            = "https://archive.ics.uci.edu/ml/machine-learning-databases/blood-transfusion/transfusion.data",
-        local_filename = "blood.csv",
-        has_header     = true,  # This dataset has a header row.
-        rename_map     = [:recency, :frequency, :monetary, :time, :donated_march],
-        label_fn       = row -> (row[:donated_march] == 1 ? 1 : -1),
-        numeric_cols   = [:recency, :frequency, :monetary, :time]
+        numeric_cols   = [:BI_RADS, :age, :shape, :margin, :density],
+        categorical_cols = []
     ),
 
     # 14) PARKINSON'S
@@ -215,7 +225,8 @@ const DATASET_CONFIG = Dict{Symbol, NamedTuple}(
             :mdvp_shimmer_dB, :shimmer_apq3, :shimmer_apq5, :mdvp_apq,
             :shimmer_dda, :nhr, :hnr, :rpde, :dfa, :spread1, :spread2,
             :d2, :ppe
-        ]
+        ],
+        categorical_cols = []
     ),
 
     # 15) SONAR
@@ -223,10 +234,11 @@ const DATASET_CONFIG = Dict{Symbol, NamedTuple}(
         url            = "https://archive.ics.uci.edu/ml/machine-learning-databases/sonar/sonar.all-data",
         local_filename = "sonar.csv",
         has_header     = false,
-        rename_map     = [Symbol("feat$i") for i in 1:60] ∪ [:label],
+        rename_map     = vcat([Symbol("feat$i") for i in 1:60], [:label]),
         label_fn       = row -> (row[:label] == "R" ? -1 : 1),
-        numeric_cols   = [Symbol("feat$i") for i in 1:60]
-    )
+        numeric_cols   = [Symbol("feat$i") for i in 1:60],
+        categorical_cols = []
+    ),
 )
 
 # ----------------------------------------------------------------------------
@@ -248,10 +260,8 @@ function load_dataset_csv(ds_name::Symbol; force_download::Bool=false)::DataFram
         println("Loading $(ds_name) dataset from local storage...")
     end
 
-    # Read CSV; if has_header is true, use header row.
     df = CSV.read(local_path, DataFrame; header = ds_info.has_header ? 1 : 0)
 
-    # Rename columns if rename_map length matches number of columns.
     rename_map = ds_info.rename_map
     if length(rename_map) == ncol(df)
         rename!(df, rename_map)
@@ -259,12 +269,10 @@ function load_dataset_csv(ds_name::Symbol; force_download::Bool=false)::DataFram
         @warn "For dataset $(ds_name), rename_map size ($(length(rename_map))) does not match number of columns ($(ncol(df)))."
     end
 
-    # Convert each numeric column from string to Float64 if necessary.
+    # Convert numeric columns to Float64
     for col in ds_info.numeric_cols
         if !(eltype(df[!, col]) <: Number)
-            # Try to parse each value.
             parsed = tryparse.(Float64, strip.(string.(df[!, col])))
-            # Replace any value that is either `nothing` or `missing` with 0.0.
             df[!, col] = map(x -> (x === nothing || x === missing) ? 0.0 : x, parsed)
         end
     end
@@ -273,26 +281,58 @@ function load_dataset_csv(ds_name::Symbol; force_download::Bool=false)::DataFram
 end
 
 # ----------------------------------------------------------------------------
-# 3) Main Function: get_dataset
+# 3) Helper Function for One-Hot Encoding
 # ----------------------------------------------------------------------------
 """
-    get_dataset(ds_name::Symbol; force_download=false, frac=1.0, train_ratio=0.8)
+build_one_hot_matrix(df, cat_cols) -> Matrix{Float64}
 
-Downloads (if necessary) and loads the dataset specified by `ds_name`.
-- Reads the CSV and renames columns.
-- Optionally samples a fraction `frac` of rows.
-- Applies the label function to generate binary labels (+1 or -1).
-- Extracts numeric features (coalescing missing values to 0).
-- Shuffles and splits into training and testing sets.
-- Standardizes features using training set statistics.
+Creates a one-hot (dummy) matrix for the given categorical columns in `df`.
+Returns a matrix of size (n_rows) x (sum_of_unique_values_in_cat_cols).
+"""
+function build_one_hot_matrix(df::DataFrame, cat_cols::Vector{Symbol})
+    if isempty(cat_cols)
+        return zeros(Float64, nrow(df), 0)  # No columns => 0 column matrix
+    end
 
-Returns `(X_train, y_train, X_test, y_test)`.
+    out_mats = Matrix{Float64}[]
+    for col in cat_cols
+        # Gather unique values (which might be strings, chars, or ints)
+        vals = sort(unique(df[!, col]))
+        n = nrow(df)
+        k = length(vals)
+        M = zeros(Float64, n, k)
+        # Fill the 1/0 for each unique value
+        for (j, v) in enumerate(vals)
+            for i in 1:n
+                if df[i, col] == v
+                    M[i, j] = 1.0
+                end
+            end
+        end
+        push!(out_mats, M)
+    end
+
+    # Horizontal concatenation of all one-hot submatrices
+    return hcat(out_mats...)
+end
+
+# ----------------------------------------------------------------------------
+# 4) Main Function: get_dataset
+# ----------------------------------------------------------------------------
+"""
+get_dataset(ds_name; force_download=false, frac=1.0, train_ratio=0.8)
+
+Loads a dataset, optionally downloads it, samples rows, creates +1/-1 labels,
+converts numeric columns to a matrix, one-hot encodes categorical columns,
+splits into train/test, and standardizes numeric columns.
+
+Returns (X_train, y_train, X_test, y_test).
 """
 function get_dataset(ds_name::Symbol; force_download::Bool=false, frac::Real=1.0, train_ratio::Real=0.8)
     # 1) Load CSV
     df = load_dataset_csv(ds_name; force_download=force_download)
 
-    # 2) Sample fraction of rows if needed.
+    # 2) Sample fraction of rows if needed
     Random.seed!(123)
     n_rows = nrow(df)
     keep_size = Int(floor(n_rows * frac))
@@ -301,17 +341,31 @@ function get_dataset(ds_name::Symbol; force_download::Bool=false, frac::Real=1.0
         df = df[chosen, :]
     end
 
-    # 3) Create binary labels using the label function.
+    # 3) Create binary labels
     ds_info = DATASET_CONFIG[ds_name]
     label_fn = ds_info.label_fn
     labels = [label_fn(row) for row in eachrow(df)]
 
-    # 4) Extract numeric features as a matrix.
+    # 4) Numeric matrix
     numeric_cols = ds_info.numeric_cols
-    X = Matrix(df[:, numeric_cols])
-    X = coalesce.(X, 0)
+    X_num = Matrix(df[:, numeric_cols])  # might be empty if none numeric
+    X_num = coalesce.(X_num, 0.0)
 
-    # 5) Shuffle and split into training and testing sets.
+    # 5) One-hot encode categorical columns
+    if length(ds_info.categorical_cols) == 0
+        X_cats = zeros(Float64, nrow(df), 0)
+    else
+        X_cats = build_one_hot_matrix(df, ds_info.categorical_cols)
+    end
+
+    # 6) Combine numeric + categorical into single feature matrix
+    if size(X_num, 2) == 0
+        X = X_cats
+    else
+        X = hcat(X_num, X_cats)
+    end
+
+    # 7) Shuffle & split
     N = size(X, 1)
     indices = shuffle(1:N)
     train_size = Int(floor(N * train_ratio))
@@ -323,19 +377,23 @@ function get_dataset(ds_name::Symbol; force_download::Bool=false, frac::Real=1.0
     X_test  = X[test_idx, :]
     y_test  = labels[test_idx]
 
-    # 6) Standardize features based on training data.
-    train_mean = mean(X_train, dims=1)
-    train_std  = std(X_train, dims=1)
-    train_std  = replace(train_std, 0=>1e-8)
+    # 8) Standardize numeric columns only, using training set stats
+    #    numeric columns are the first size(X_num, 2) in X
+    num_dim = size(X_num, 2)
+    if num_dim > 0
+        train_mean = mean(X_train[:, 1:num_dim], dims=1)
+        train_std  = std(X_train[:, 1:num_dim], dims=1)
+        train_std  = replace(train_std, 0 => 1e-8)
 
-    X_train = (X_train .- train_mean) ./ train_std
-    X_test  = (X_test  .- train_mean) ./ train_std
+        X_train[:, 1:num_dim] = (X_train[:, 1:num_dim] .- train_mean) ./ train_std
+        X_test[:, 1:num_dim]  = (X_test[:, 1:num_dim]  .- train_mean) ./ train_std
+    end
 
     return X_train, y_train, X_test, y_test
 end
 
 # ----------------------------------------------------------------------------
-# 4) Convenience Wrappers for IRIS and ADULT (Matching old usage)
+# 5) Convenience Wrappers for IRIS and ADULT
 # ----------------------------------------------------------------------------
 function get_iris_data(; force_download=false)
     return get_dataset(:iris; force_download=force_download, frac=1.0, train_ratio=0.8)
@@ -345,4 +403,4 @@ function get_adult_data(; force_download=false, frac=1.0)
     return get_dataset(:adult; force_download=force_download, frac=frac, train_ratio=0.8)
 end
 
-end  # module GetData
+end # module GetData
