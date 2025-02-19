@@ -91,7 +91,7 @@ module MKL
         return K
     end
 
-    function compute_kernels(X1::AbstractMatrix, X2::AbstractMatrix, kernels::AbstractVector)
+    function compute_kernels(X1::AbstractMatrix{<:Real}, X2::AbstractMatrix{<:Real}, kernels::AbstractVector{<:Dict})
         """
         Compute multiple kernels for given data matrices X1 and X2 efficiently.
     
@@ -100,63 +100,79 @@ module MKL
             X2: Matrix of size (n2, d) - Data on the other side of the kernel.
             kernels: Vector of Dicts where each Dict specifies:
                 - :type (String): Type of kernel ("linear", "polynomial", "rbf", "sigmoid", "laplacian", "chi_squared").
-                - :params (Dict): Hyperparameters for the kernel (e.g., degree, c, gamma).
+                - :params (Dict): Hyperparameters for the kernel (e.g., degree, c, gamma, c0).
     
         Returns:
             Vector of kernel matrices corresponding to the specified kernels.
         """
-        # Determine which computations are necessary
-        need_linear_or_poly = any(k[:type] in ["linear", "polynomial", "sigmoid"] for k in kernels)
-        need_rbf_or_laplacian = any(k[:type] in ["rbf", "laplacian"] for k in kernels)
-        need_chi_squared = any(k[:type] == "chi_squared" for k in kernels)
-        
-        # Precompute X1*X2' if needed for linear, polynomial, sigmoid
-        X1X2t = nothing
-        if need_linear_or_poly
-            X1X2t = X1 * X2'  # expensive operation done once
-        end
-        
-        # Precompute squared norms if RBF or Laplacian is needed
+        n1, d = size(X1)
+        n2, d2 = size(X2)
+        @assert d == d2 "X1 and X2 must have the same number of columns."
+    
+        # Determine which precomputations are needed.
+        need_inner = any(kernel[:type] in ("linear", "polynomial", "sigmoid", "rbf") for kernel in kernels)
+        need_rbf     = any(kernel[:type] == "rbf" for kernel in kernels)
+        need_laplacian = any(kernel[:type] == "laplacian" for kernel in kernels)
+        need_chi_squared = any(kernel[:type] == "chi_squared" for kernel in kernels)
+    
+        # Precompute X1*X2' if any kernel requires an inner product.
+        X1X2t = need_inner ? X1 * X2' : nothing
+    
+        # Precompute squared norms for RBF.
         X1_sq = nothing
         X2_sq = nothing
-        if need_rbf_or_laplacian
-            X1_sq = sum(X1.^2, dims=2)
-            X2_sq = sum(X2.^2, dims=2)
+        if need_rbf
+            X1_sq = sum(abs2, X1; dims=2)  # (n1×1)
+            X2_sq = sum(abs2, X2; dims=2)  # (n2×1)
         end
-        
+    
+        # Precompute Manhattan distances for Laplacian kernel.
+        laplacian_dists = nothing
+        if need_laplacian
+            laplacian_dists = zeros(eltype(X1), n1, n2)
+            @inbounds for j in 1:d
+                @views laplacian_dists .+= abs.(X1[:, j] .- X2[:, j]')
+            end
+        end
+    
+        # Precompute chi-squared distances.
+        chi_sq_dists = nothing
+        if need_chi_squared
+            chi_sq_dists = zeros(eltype(X1), n1, n2)
+            @inbounds for j in 1:d
+                @views chi_sq_dists .+= ((X1[:, j] .- X2[:, j]').^2) ./ (X1[:, j] .+ X2[:, j]')
+            end
+        end
+    
+        # Allocate the vector of kernel matrices.
         kernel_matrices = Vector{Matrix{Float64}}(undef, length(kernels))
         for (i, kernel) in enumerate(kernels)
             kernel_type = kernel[:type]
             params = kernel[:params]
-            
             if kernel_type == "linear"
-                kernel_matrices[i] = X1X2t
-                
+                # Return a copy to avoid accidental mutation.
+                kernel_matrices[i] = copy(X1X2t)
             elseif kernel_type == "polynomial"
                 degree = get(params, :degree, 3)
                 c = get(params, :c, 1.0)
                 kernel_matrices[i] = (X1X2t .+ c) .^ degree
-                
             elseif kernel_type == "rbf"
                 gamma = get(params, :gamma, 1.0)
+                # Compute squared Euclidean distances.
                 dists = X1_sq .- (2 .* X1X2t) .+ X2_sq'
+                # Optionally, to avoid tiny negative numbers due to floating-point errors, you might add:
+                # dists = max.(dists, 0.0)
                 kernel_matrices[i] = exp.(-gamma .* dists)
-                
             elseif kernel_type == "sigmoid"
                 gamma = get(params, :gamma, 1.0)
                 c0 = get(params, :c0, 0.0)
                 kernel_matrices[i] = tanh.(gamma .* X1X2t .+ c0)
-                
             elseif kernel_type == "laplacian"
                 gamma = get(params, :gamma, 1.0)
-                dists = sum(abs.(X1[:, i] .- X2[:, i]') for i in 1:size(X1, 2))
-                kernel_matrices[i] = exp.(-gamma .* dists)
-                
+                kernel_matrices[i] = exp.(-gamma .* laplacian_dists)
             elseif kernel_type == "chi_squared"
                 gamma = get(params, :gamma, 1.0)
-                chi_sq_dists = sum(((X1[:, i] .- X2[:, i]').^2) ./ (X1[:, i] .+ X2[:, i]') for i in 1:size(X1, 2))
                 kernel_matrices[i] = exp.(-gamma .* chi_sq_dists)
-                
             else
                 error("Unsupported kernel type: $kernel_type")
             end
@@ -204,6 +220,14 @@ module MKL
 
     # Function to compute the combined kernel matrix K(β)
     function compute_combined_kernel(K_list, β)
+
+        # @infiltrate
+
+        # Ensure that the kernel matrices do not have very large/small values
+        for j in 1:length(K_list)
+            K_list[j] .= clamp.(K_list[j], -1e9, 1e9)  # Prevent overflow in kernels
+        end
+
         # Verify that K_list is not empty
         if isempty(K_list)
             throw(ArgumentError("K_list is empty."))

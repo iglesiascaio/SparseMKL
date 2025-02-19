@@ -28,18 +28,11 @@ include("../src/Interpretable_MKL/interpretable_multi_kernel.jl")
 using .InterpretableMKL: sparse_optimize_beta, train_interpretable_mkl
 
 println("Loading data...")
-# X_train, y_train, X_test, y_test = get_dataset(:adult; force_download=false, frac=0.33, train_ratio=0.8)
-X_train, y_train, X_test, y_test = get_dataset(:banknote; force_download=false, frac=1.00, train_ratio=0.8)
+X_train, y_train, X_test, y_test = get_dataset(:adult; force_download=false, frac=0.33, train_ratio=0.8)
+# X_train, y_train, X_test, y_test = get_dataset(:iris; force_download=false, frac=1.00, train_ratio=0.8)
 # X_train, y_train, X_test, y_test = get_dataset(:wine; force_download=false, frac=1.00, train_ratio=0.8)
 
-
 @infiltrate
-# #print head of data
-# println("X_train: ", X_train[1:5, 1:5])
-# println("y_train: ", y_train[1:5])
-# println("X_test: ", X_test[1:5, 1:5])
-
-
 
 # Define kernel specifications
 kernels = [
@@ -51,15 +44,13 @@ kernels = [
     Dict(:type => "rbf",        :params => Dict(:gamma => 0.1)),
     Dict(:type => "sigmoid",    :params => Dict(:gamma => 0.5, :c0 => 1.0)),
     Dict(:type => "laplacian",  :params => Dict(:gamma => 0.3)),
-    # Dict(:type => "chi_squared",:params => Dict(:gamma => 0.2))
+    Dict(:type => "chi_squared",:params => Dict(:gamma => 0.2))
 ]
-
-
 
 # Hyperparameters
 C = 1
 k0 = 3
-# λ = 200.0
+# λ = 1000.0
 λ = length(X_train) * 1e-1
 max_iter = 50
 sum_beta_val = 1.0
@@ -73,6 +64,39 @@ end
 
 y_train = Float64.(y_train)
 C = float(C)
+
+############################
+# Utility function to print confusion metrics
+############################
+
+function print_confusion_metrics(y_actual, y_pred, set_name="Data Set")
+    println("---------------- $set_name ----------------")
+    TP = 0; TN = 0; FP = 0; FN = 0
+
+    for i in 1:length(y_actual)
+        actual = y_actual[i]
+        predicted = y_pred[i]
+        if      actual == 1  && predicted == 1   TP += 1
+        elseif  actual == -1 && predicted == -1  TN += 1
+        elseif  actual == -1 && predicted == 1   FP += 1
+        elseif  actual == 1  && predicted == -1  FN += 1
+        end
+    end
+
+    println("Confusion Matrix ($set_name):")
+    println("            Predicted")
+    println("            -1     +1")
+    println(@sprintf("Actual -1   %-6d %-6d", TN, FP))
+    println(@sprintf("       +1   %-6d %-6d", FN, TP))
+
+    precision = (TP + FP == 0) ? 0 : TP / (TP + FP)
+    recall    = (TP + FN == 0) ? 0 : TP / (TP + FN)
+    f1_score  = (precision + recall == 0) ? 0 : 2*(precision*recall)/(precision+recall)
+
+    println("Precision: $precision")
+    println("Recall: $recall")
+    println("F1-score: $f1_score\n")
+end
 
 ############################
 # 2) PROFILE THE TRAINING
@@ -89,6 +113,7 @@ Profile.clear()
 
     b = compute_bias(α, y_train, K_combined, C)
 
+    # Predictions from the MKL model
     y_pred_train = predict_mkl(
         α, y_train, X_train, X_train, β, b, K_list_train,
         kernel_type="precomputed"; tolerance=tolerance
@@ -101,41 +126,36 @@ Profile.clear()
     accuracy_train = sum(y_train .== y_pred_train) / length(y_train)
     accuracy_test  = sum(y_test  .== y_pred_test)  / length(y_test)
 
+    println("=== MKL RESULTS ===")
     println("Training Accuracy: $(round(accuracy_train*100, digits=2))%")
     println("Test Accuracy: $(round(accuracy_test*100, digits=2))%")
 
-    # Confusion metrics
-    function print_confusion_metrics(y_actual, y_pred, set_name="Data Set")
-        println("---------------- $set_name ----------------")
-        TP = 0; TN = 0; FP = 0; FN = 0
+    print_confusion_metrics(y_train, y_pred_train, "Train Set (MKL)")
+    print_confusion_metrics(y_test,  y_pred_test,  "Test Set (MKL)")
 
-        for i in 1:length(y_actual)
-            actual = y_actual[i]
-            predicted = y_pred[i]
-            if      actual == 1  && predicted == 1   TP += 1
-            elseif  actual == -1 && predicted == -1  TN += 1
-            elseif  actual == -1 && predicted == 1   FP += 1
-            elseif  actual == 1  && predicted == -1  FN += 1
-            end
-        end
+    ############################
+    # 2b) MAJORITY-VOTE BASELINE
+    ############################
 
-        println("Confusion Matrix ($set_name):")
-        println("            Predicted")
-        println("            -1     +1")
-        println(@sprintf("Actual -1   %-6d %-6d", TN, FP))
-        println(@sprintf("       +1   %-6d %-6d", FN, TP))
+    println("=== MAJORITY-VOTE BASELINE ===")
 
-        precision = (TP + FP == 0) ? 0 : TP / (TP + FP)
-        recall    = (TP + FN == 0) ? 0 : TP / (TP + FN)
-        f1_score  = (precision + recall == 0) ? 0 : 2*(precision*recall)/(precision+recall)
+    # Identify which class is in majority in the training set
+    n_pos = sum(y_train .== 1)
+    n_neg = sum(y_train .== -1)
+    majority_label = n_pos >= n_neg ? 1.0 : -1.0
 
-        println("Precision: $precision")
-        println("Recall: $recall")
-        println("F1-score: $f1_score\n")
-    end
+    # Predict that majority label for all samples
+    y_pred_train_baseline = fill(majority_label, length(y_train))
+    y_pred_test_baseline  = fill(majority_label, length(y_test))
 
-    print_confusion_metrics(y_train, y_pred_train, "Train Set")
-    print_confusion_metrics(y_test,  y_pred_test,  "Test Set")
+    accuracy_train_baseline = sum(y_train .== y_pred_train_baseline) / length(y_train)
+    accuracy_test_baseline  = sum(y_test  .== y_pred_test_baseline)  / length(y_test)
+
+    println("Baseline Training Accuracy: $(round(accuracy_train_baseline*100, digits=2))%")
+    println("Baseline Test Accuracy: $(round(accuracy_test_baseline*100, digits=2))%")
+
+    print_confusion_metrics(y_train, y_pred_train_baseline, "Train Set (Baseline)")
+    print_confusion_metrics(y_test,  y_pred_test_baseline,  "Test Set (Baseline)")
 end
 
 ############################

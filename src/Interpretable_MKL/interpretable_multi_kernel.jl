@@ -533,6 +533,32 @@ end
 ################################################################################
 #        M A I N   I N T E R P R E T A B L E   M K L   T R A I N I N G 
 ################################################################################
+# Helper function to initialize alphas randomly while satisfying the constraints:
+#   0 ≤ αᵢ ≤ C   for all i
+#   ∑ᵢ αᵢ yᵢ = 0
+function random_init_alphas(n::Int, C::Float64, y::Vector{Float64})
+    # Generate a random noise vector in [-0.5, 0.5]
+    δ = rand(n) .- 0.5
+    # Project δ onto the hyperplane {δ: dot(δ, y) = 0} so that the noise does not affect the constraint.
+    δ = δ .- (dot(δ, y) / dot(y, y)) * y
+    # Start from a neutral value C/2 for all alphas and add the noise.
+    α = fill(C/2, n) .+ δ
+    # Ensure box constraints hold.
+    α = clamp.(α, 0.0, C)
+    
+    # (Optional) Adjust one element to force the equality constraint exactly.
+    # Here we look for at least one positive (y==1) and one negative (y==-1) sample.
+    pos_idx = findall(x -> x == 1.0, y)
+    neg_idx = findall(x -> x == -1.0, y)
+    if !isempty(pos_idx) && !isempty(neg_idx)
+        discrepancy = dot(α, y)
+        # Adjust the first positive element so that the weighted sum becomes zero.
+        i = pos_idx[1]
+        α[i] = clamp(α[i] - discrepancy, 0.0, C)
+    end
+    return α
+end
+
 function train_interpretable_mkl(
     X::Matrix{Float64},
     y::Vector{Float64},
@@ -544,36 +570,56 @@ function train_interpretable_mkl(
     k0::Int=3,
     sum_beta_val::Float64=1.0,
     solver_type::Symbol=:SMO,
-    beta_method::Symbol=:gssp
+    beta_method::Symbol=:gssp,
+    max_non_decrease::Int=3
 )
     @assert !isempty(K_list) "Empty kernel list!"
     n = size(X,1)
     q = length(K_list)
 
-    # Initialize β and α
-    β     = ones(q) ./ q
+    ###################################################################
+    # Step 1: Initialize β as a linear combination of three random kernels
+    ###################################################################
+    Random.seed!(10)
+    random_indices = randperm(q)[1:k0]  # Select 3 random kernel indices
+    β = zeros(q)
+    β[random_indices] .= 1/k0  # Assign equal weight to 3 kernels
     β_old = copy(β)
-    α     = zeros(n)
-    α_old = copy(α)
 
-    # Build initial combined kernel
+    println("Initial random β = ", β)
+
+    ###################################################################
+    # Step 2: Compute the initial combined kernel using this β
+    ###################################################################
     K_combined = compute_combined_kernel(K_list, β)
     symmetrize!(K_combined)
     K_combined_old = copy(K_combined)
 
-    # If using Gurobi, prepare the model
-    model  = nothing
-    α_vars = Vector{VariableRef}()
-    if solver_type == :GUROBI
+    ###################################################################
+    # Step 3: Solve for initial α using this kernel
+    ###################################################################
+    if solver_type == :SMO
+        α, _ = train_svm_smo!(K_combined, y, C; tol=tolerance, eps=1e-3, max_passes=5)
+    elseif solver_type == :GUROBI
         model, α_vars = init_svm_model(n, y, C)
+        α, _ = train_svm_gurobi!(model, α_vars, K_combined, y)
+    elseif solver_type == :LIBSVM
+        α, _ = train_svm_libsvm(K_combined, y, C)
+    else
+        error("Unknown solver_type=$solver_type. Choose :SMO, :GUROBI, or :LIBSVM.")
     end
+
+    α_old = copy(α)
+    println("Initial α computed from first SVM step.")
 
     list_alphas = Vector{Vector{Float64}}()
     list_betas  = Vector{Vector{Float64}}()
 
-    # Initialize objective value
-    obj_old = Inf
+    ###################################################################
+    # Step 4: Enter the main optimization loop
+    ###################################################################
     obj_best = Inf
+    non_decrease_count = 0
 
     for iter in 1:max_iter
         println("Iteration $iter...")
@@ -603,7 +649,6 @@ function train_interpretable_mkl(
         if solver_type == :SMO
             α, _ = train_svm_smo!(K_combined, y, C; tol=tolerance, eps=1e-3, max_passes=5)
         elseif solver_type == :GUROBI
-            @assert model !== nothing "Gurobi model not initialized!"
             α, _ = train_svm_gurobi!(model, α_vars, K_combined, y)
         elseif solver_type == :LIBSVM
             α, _ = train_svm_libsvm(K_combined, y, C)
@@ -619,20 +664,26 @@ function train_interpretable_mkl(
         println("β = ", β)
         println("sum(α) = ", sum(α))
 
-        # If the objective function did not decrease, return the previous best solution
-        if obj >= obj_best - tolerance
-            println("Stopping criterion met: Objective function did not decrease.")
+        # Check if the current iteration yields a sufficient decrease.
+        if obj_best - obj < tolerance
+            non_decrease_count += 1
+        else
+            # reset the counter if the objective decreases
+            non_decrease_count = 0
+            obj_best = obj
+            α_old .= α
+            β_old .= β
+            K_combined_old .= K_combined
+        end
+
+        # If the total count of iterations without sufficient decrease exceeds the limit, break.
+        if non_decrease_count >= max_non_decrease
+            println("Stopping criterion met: objective did not decrease enough in a total of $max_non_decrease iterations in a row.")
             println("Returning the best solution found so far.")
             println("Final β = ", β_old)
             println("Final objective = ", obj_best)
             return α_old, β_old, K_combined_old, list_alphas, list_betas
         end
-
-        # Update best known solution
-        obj_best = obj
-        α_old .= α
-        β_old .= β
-        K_combined_old .= K_combined
 
         push!(list_alphas, copy(α))
         push!(list_betas,  copy(β))

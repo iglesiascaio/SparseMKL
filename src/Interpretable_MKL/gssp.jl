@@ -34,10 +34,15 @@ module GSSPAlgorithm
         and
         ρ = max{ j : w_j > (1/j)* ( (sum_{i=1}^j w_i) - λ ) }.
         """
+        # Cap w to avoid numerical instability
+        w_max = 1e6  # Choose an appropriate cap based on expected scale
+        w = min.(w, w_max)
+
+        
         # Sort w in descending order
         w_sorted = sort(w, rev=true)
         partial_sum = 0.0
-        ρ = 0
+        ρ = 1
 
         # ρ is the largest index such that w_sorted[ρ] > ( (Σ_{j≤ρ} w_sorted[j] - λ ) / ρ )
         for j in eachindex(w_sorted)
@@ -58,6 +63,8 @@ module GSSPAlgorithm
 
         # Final: clamp each coordinate: [w_i - τ]_+
         # (still unsorted, so we apply it to w in original order!)
+        #print difference between w and τ
+        println("w - τ: ", w .- τ)
         return max.(w .- τ, 0)
     end
 
@@ -71,11 +78,16 @@ module GSSPAlgorithm
         2) S = supp(x)
         3) β[S] = P_{λ}^+( w[S] ),   β[S^c] = 0
         """
+        println("w: ", w)
         # (1) Truncate w to top k entries
         x = PLk(w, k)
 
+        println("x: ", x)
+
         # (2) S = set of indices where x != 0
         S = findall(!iszero, x)
+
+        println("S: ", S)
 
         # (3) Project the subvector w[S] onto simplex { sum=λ, >=0 }
         w_sub  = w[S]               # original w restricted to S

@@ -1,0 +1,1256 @@
+=== Training Profiling Summary ===
+
+ Count  Overhead File                    Line Function
+ =====  ======== ====                    ==== ========
+     1         1 @Base/Base.jl             37 getproperty(x::Nothing, f::Symbol)
+215221         0 @Base/Base.jl            495 include(mod::Module, _path::Strin…
+     1         0 @Base/abstractarray.jl    98 axes
+     1         0 @Base/abstractarray.jl   137 axes1
+    28         0 @Base/abstractarray.jl   681 checkbounds
+     1         0 @Base/abstractarray.jl   687 checkbounds
+    28         0 @Base/abstractarray.jl   702 checkbounds
+    28         0 @Base/abstractarray.jl   728 checkbounds_indices
+    29         0 @Base/abstractarray.jl   763 checkindex
+     2         0 @Base/abstractarray.jl   923 copy!
+     1         0 @Base/abstractarray.jl   321 eachindex
+  3311         0 @Base/abstractarray.jl  1291 getindex
+     3         0 @Base/abstractarray.jl  1220 isempty
+     1         0 @Base/abstractarray.jl  3278 map!
+     1         0 @Base/abstractarray.jl  1240 pointer
+    44        44 @Base/abstractarray.jl     ? setindex!
+  1860         0 @Base/abstractarray.jl   831 similar
+     1         0 @Base/abstractarray.jl   833 similar
+     1         0 @Base/abstractarray.jl   842 similar
+  2242         0 @Base/abstractarray.jl   876 similar
+  2242         0 @Base/abstractarray.jl   877 similar
+    22         0 @Base/abstractdict.jl     17 haskey
+     1         0 @Base/abstractset.jl     216 setdiff
+    44         0 @Base/array.jl           723 _array_for
+    44         0 @Base/array.jl           726 _array_for
+     2         0 @Base/array.jl           696 _collect
+     1         0 @Base/array.jl           699 _collect(::Type{Int64}, itr::Core…
+     2         0 @Base/array.jl           700 _collect(::Type{Int64}, itr::Core…
+     1         0 @Base/array.jl           765 _collect
+     2         0 @Base/array.jl           376 _copyto_impl!
+   322         0 @Base/array.jl           376 _copyto_impl!(dest::Matrix{Float6…
+     2         2 @Base/array.jl          1081 _deleteend!
+     2         2 @Base/array.jl          1074 _growat!
+     1         1 @Base/array.jl          1070 _growbeg!
+    27        27 @Base/array.jl          1072 _growend!
+     1         0 @Base/array.jl           715 _similar_for
+     1         1 @Base/array.jl           293 _unsafe_copyto!(dest::Vector{Core…
+     1         0 @Base/array.jl           295 _unsafe_copyto!(dest::Vector{Core…
+     2         2 @Base/array.jl           299 _unsafe_copyto!(dest::Vector{Core…
+     1         1 @Base/array.jl             ? adce_pass!(ir::Core.Compiler.IRCo…
+     1         0 @Base/array.jl          1180 append!
+     2         0 @Base/array.jl          1182 append!
+     1         0 @Base/array.jl          1183 append!
+     5         0 @Base/array.jl           694 collect
+     1         0 @Base/array.jl           759 collect
+   167         0 @Base/array.jl           834 collect(itr::Base.Generator{Vecto…
+  2902         0 @Base/array.jl           844 collect(itr::Base.Generator{Vecto…
+  2902         0 @Base/array.jl           892 collect_to!
+  2902         0 @Base/array.jl           870 collect_to_with_first!
+   195       195 @Base/array.jl           411 copy
+     2         0 @Base/array.jl           363 copyto!
+   322         0 @Base/array.jl           368 copyto!
+     2         0 @Base/array.jl           385 copyto!
+   320         0 @Base/array.jl           388 copyto!
+    42         0 @Base/array.jl           582 fill
+    42         0 @Base/array.jl           584 fill
+   562         0 @Base/array.jl           395 fill!
+    26         0 @Base/array.jl           448 getindex
+     1         0 @Base/array.jl           465 getindex
+     3         0 @Base/array.jl           471 getindex
+     3         0 @Base/array.jl           975 getindex
+     1         0 @Base/array.jl           977 getindex
+     2         0 @Base/array.jl          1561 insert!
+     1         0 @Base/array.jl           268 isassigned
+    44         0 @Base/array.jl           945 iterate
+    35        35 @Base/array.jl             ? macro expansion
+     2         0 @Base/array.jl          1401 pop!
+    16         0 @Base/array.jl          1119 push!
+     1         0 @Base/array.jl          1126 push!
+     1         0 @Base/array.jl          1481 pushfirst!
+     2         2 @Base/array.jl             ? renumber_ssa2!(stmt::Any, ssanums…
+     2         2 @Base/array.jl          1021 renumber_ssa2!(stmt::Any, ssanums…
+     7         0 @Base/array.jl          1315 resize!
+  2245      2244 @Base/array.jl          1021 setindex!
+  7940      7940 @Base/array.jl          1024 setindex!
+  1860         0 @Base/array.jl           420 similar
+     1         1 @Base/array.jl           191 size
+     1         1 @Base/array.jl             ? typeinf(interp::Core.Compiler.Nat…
+     1         1 @Base/array.jl           334 unsafe_copyto!
+   320         0 @Base/array.jl           337 unsafe_copyto!
+     1         0 @Base/array.jl           346 unsafe_copyto!
+     2         0 @Base/array.jl           353 unsafe_copyto!
+     1         0 @Base/array.jl           160 vect
+     2         0 @Base/array.jl           632 zeros
+  1121         0 @Base/array.jl           633 zeros
+   562         0 @Base/array.jl           636 zeros
+   561         0 @Base/array.jl           637 zeros
+  9138         0 @Base/arraymath.jl        21 *(A::Float64, B::Matrix{Float64})
+     1         0 @Base/arrayshow.jl       486 show
+     1         0 @Base/arrayshow.jl       515 show_vector
+     1         0 @Base/arrayshow.jl       530 show_vector(io::Base.TTY, v::Vect…
+     1         0 @Base/bitarray.jl         37 BitArray
+     1         0 @Base/bitarray.jl         71 BitArray
+     1         0 @Base/bitarray.jl        696 _unsafe_bitsetindex!
+     1         0 @Base/bitarray.jl        403 falses
+     1         0 @Base/bitarray.jl        405 falses(dims::Tuple{Int64})
+    16         2 @Base/bitset.jl           18 BitSet
+     2         0 @Base/bitset.jl           29 BitSet
+     1         0 @Base/bitset.jl          362 _check0
+     1         1 @Base/bitset.jl          363 _check0
+     1         0 @Base/bitset.jl          111 _growend0!
+     1         0 @Base/bitset.jl           82 _setint!
+     1         1 @Base/bitset.jl           83 _setint!
+     1         0 @Base/bitset.jl           95 _setint!
+     1         0 @Base/bitset.jl          102 _setint!
+     2         1 @Base/bitset.jl           44 copy(s1::Core.Compiler.BitSet)
+     1         0 @Base/bitset.jl           45 copymutable
+     2         0 @Base/bitset.jl          284 isempty
+     4         0 @Base/bitset.jl          248 push!
+   245       245 @Base/boot.jl            477 Array
+  4600      4600 @Base/boot.jl            479 Array
+   128         0 @Base/boot.jl            486 Array
+  4579         0 @Base/boot.jl            487 Array
+    21         0 @Base/boot.jl            492 Array
+  2198         0 @Base/boot.jl            494 Array
+    14         0 @Base/boot.jl            496 Array
+     5         0 @Base/boot.jl            500 Array
+     1         1 @Base/boot.jl            445 CodeInstance
+   133        11 @Base/boot.jl            602 (::Core.GeneratedFunctionStub)(::…
+    21         0 @Base/boot.jl            783 Int32
+     1         1 @Base/boot.jl            424 LineInfoNode
+    21        21 @Base/boot.jl            656 checked_trunc_sint
+215221         0 @Base/boot.jl            385 eval
+    21         0 @Base/boot.jl            693 toInt32
+  1625         0 @Base/broadcast.jl       675 _broadcast_getindex
+  1635         0 @Base/broadcast.jl       681 _broadcast_getindex
+  2351         0 @Base/broadcast.jl       682 _broadcast_getindex
+  2351         0 @Base/broadcast.jl       709 _broadcast_getindex_evalf
+  1635         0 @Base/broadcast.jl       705 _getindex
+     2         0 @Base/broadcast.jl       706 _getindex
+  9138         0 @Base/broadcast.jl       892 broadcast_preserving_zero_d
+  9192         0 @Base/broadcast.jl       928 copy
+ 11803         0 @Base/broadcast.jl       956 copyto!
+   320         0 @Base/broadcast.jl       997 copyto!
+ 11483         0 @Base/broadcast.jl      1003 copyto!
+  3976         0 @Base/broadcast.jl       636 getindex
+ 11463         0 @Base/broadcast.jl      1004 macro expansion
+  9192         0 @Base/broadcast.jl       903 materialize
+  4809         0 @Base/broadcast.jl       911 materialize!
+  4809         0 @Base/broadcast.jl       914 materialize!
+  2198         0 @Base/broadcast.jl       223 similar
+  2198         0 @Base/broadcast.jl       224 similar
+  1343         0 @Base/cartesian.jl        64 macro expansion
+    79         0 @Base/cartesian.jl        66 macro expansion
+215221         0 @Base/client.jl          552 _start()
+215221         0 @Base/client.jl          318 exec_options(opts::Base.JLOptions)
+   320       320 @Base/cmem.jl             26 memmove
+     1         0 …ractinterpretation.jl  1587 abstract_apply(interp::Core.Compi…
+   333         0 …ractinterpretation.jl  1612 abstract_apply(interp::Core.Compi…
+     1         0 …ractinterpretation.jl  1615 abstract_apply(interp::Core.Compi…
+  1476         2 …ractinterpretation.jl  2162 abstract_call(interp::Core.Compil…
+   115         0 …ractinterpretation.jl  2166 abstract_call(interp::Core.Compil…
+     1         0 …ractinterpretation.jl  2168 abstract_call(interp::Core.Compil…
+  1476         1 …ractinterpretation.jl  2169 abstract_call(interp::Core.Compil…
+     1         0 …ractinterpretation.jl  2353 abstract_call(interp::Core.Compil…
+  1476         0 …ractinterpretation.jl  2354 abstract_call(interp::Core.Compil…
+     1         1 …ractinterpretation.jl  2355 abstract_call(interp::Core.Compil…
+     1         0 …ractinterpretation.jl  2358 abstract_call(interp::Core.Compil…
+     1         1 …ractinterpretation.jl  1710 abstract_call_builtin(interp::Cor…
+    28         0 …ractinterpretation.jl  1739 abstract_call_builtin(interp::Cor…
+     2         2 …ractinterpretation.jl     ? abstract_call_gf_by_type(interp::…
+    93         0 …ractinterpretation.jl    24 abstract_call_gf_by_type(interp::…
+     1         1 …ractinterpretation.jl    31 abstract_call_gf_by_type(interp::…
+     2         0 …ractinterpretation.jl    35 abstract_call_gf_by_type(interp::…
+     2         0 …ractinterpretation.jl    39 abstract_call_gf_by_type(interp::…
+     1         1 …ractinterpretation.jl    43 abstract_call_gf_by_type(interp::…
+  1474         1 …ractinterpretation.jl    95 abstract_call_gf_by_type(interp::…
+   684         0 …ractinterpretation.jl   103 abstract_call_gf_by_type(interp::…
+     1         0 …ractinterpretation.jl   120 abstract_call_gf_by_type(interp::…
+     2         0 …ractinterpretation.jl   122 abstract_call_gf_by_type(interp::…
+     3         0 …ractinterpretation.jl   126 abstract_call_gf_by_type(interp::…
+     1         0 …ractinterpretation.jl   127 abstract_call_gf_by_type(interp::…
+     1         0 …ractinterpretation.jl   133 abstract_call_gf_by_type(interp::…
+     1         1 …ractinterpretation.jl   153 abstract_call_gf_by_type(interp::…
+     1         1 …ractinterpretation.jl   166 abstract_call_gf_by_type(interp::…
+     3         0 …ractinterpretation.jl   171 abstract_call_gf_by_type(interp::…
+    31         0 …ractinterpretation.jl   173 abstract_call_gf_by_type(interp::…
+     2         0 …ractinterpretation.jl   188 abstract_call_gf_by_type(interp::…
+     1         1 …ractinterpretation.jl  2002 abstract_call_known(interp::Core.…
+   333         0 …ractinterpretation.jl  2004 abstract_call_known(interp::Core.…
+    25         0 …ractinterpretation.jl  2006 abstract_call_known(interp::Core.…
+     2         0 …ractinterpretation.jl  2010 abstract_call_known(interp::Core.…
+    30         1 …ractinterpretation.jl  2014 abstract_call_known(interp::Core.…
+     6         0 …ractinterpretation.jl  2015 abstract_call_known(interp::Core.…
+     1         0 …ractinterpretation.jl  2053 abstract_call_known(interp::Core.…
+    55         0 …ractinterpretation.jl  2054 abstract_call_known(interp::Core.…
+    13         0 …ractinterpretation.jl  2086 abstract_call_known(interp::Core.…
+  1475         1 …ractinterpretation.jl  2087 abstract_call_known(interp::Core.…
+     1         1 …ractinterpretation.jl   501 abstract_call_method(interp::Core…
+     1         0 …ractinterpretation.jl   511 abstract_call_method(interp::Core…
+  1474         0 …ractinterpretation.jl   629 abstract_call_method(interp::Core…
+     1         1 …ractinterpretation.jl   653 abstract_call_method(interp::Core…
+   684         0 …ractinterpretation.jl   788 abstract_call_method_with_const_a…
+    61         0 …ractinterpretation.jl   794 abstract_call_method_with_const_a…
+     4         0 …ractinterpretation.jl   804 abstract_call_method_with_const_a…
+    43         0 …ractinterpretation.jl   812 abstract_call_method_with_const_a…
+   620         0 …ractinterpretation.jl   818 abstract_call_method_with_const_a…
+   115         0 …ractinterpretation.jl  2156 abstract_call_unknown(interp::Cor…
+     1         1 …ractinterpretation.jl  2876 abstract_eval_basic_statement(int…
+     1         1 …ractinterpretation.jl  2881 abstract_eval_basic_statement(int…
+  1298         0 …ractinterpretation.jl  2889 abstract_eval_basic_statement(int…
+     1         1 …ractinterpretation.jl  2908 abstract_eval_basic_statement(int…
+  1475         0 …ractinterpretation.jl  2913 abstract_eval_basic_statement(int…
+    11         0 …ractinterpretation.jl  2365 abstract_eval_call(interp::Core.C…
+  1476         0 …ractinterpretation.jl  2370 abstract_eval_call(interp::Core.C…
+     2         0 …ractinterpretation.jl  2655 abstract_eval_globalref
+     2         2 …ractinterpretation.jl  2656 abstract_eval_globalref
+     1         0 …ractinterpretation.jl  2665 abstract_eval_globalref(interp::C…
+     1         1 …ractinterpretation.jl  2668 abstract_eval_globalref(interp::C…
+     4         1 …ractinterpretation.jl  2671 abstract_eval_globalref(interp::C…
+     1         1 …ractinterpretation.jl  2276 abstract_eval_special_value
+     1         1 …ractinterpretation.jl  2286 abstract_eval_special_value
+     6         0 …ractinterpretation.jl  2294 abstract_eval_special_value
+     1         1 …ractinterpretation.jl  2296 abstract_eval_special_value
+     1         1 …ractinterpretation.jl  2617 abstract_eval_statement(interp::C…
+     1         0 …ractinterpretation.jl  2622 abstract_eval_statement(interp::C…
+  1476         0 …ractinterpretation.jl  2624 abstract_eval_statement(interp::C…
+     2         0 …ractinterpretation.jl  2639 abstract_eval_statement(interp::C…
+     1         1 …ractinterpretation.jl  2373 abstract_eval_statement_expr(inte…
+  1476         0 …ractinterpretation.jl  2380 abstract_eval_statement_expr(inte…
+     1         0 …ractinterpretation.jl  2413 abstract_eval_statement_expr(inte…
+     8         0 …ractinterpretation.jl  2308 abstract_eval_value(interp::Core.…
+     2         0 …ractinterpretation.jl  1988 abstract_finalizer
+    25         0 …ractinterpretation.jl  1947 abstract_invoke(interp::Core.Comp…
+     2         0 …ractinterpretation.jl   483 add_call_backedges!(interp::Core.…
+     1         0 …ractinterpretation.jl     6 call_result_unused
+     3         0 …ractinterpretation.jl  2315 collect_argtypes
+     8         0 …ractinterpretation.jl  2317 collect_argtypes
+    61        54 …ractinterpretation.jl   909 concrete_eval_call(interp::Core.C…
+     1         0 …ractinterpretation.jl   454 conditional_argtype
+     9         0 …ractinterpretation.jl  1192 const_prop_call(interp::Core.Comp…
+     4         0 …ractinterpretation.jl  1196 const_prop_call(interp::Core.Comp…
+    15         0 …ractinterpretation.jl  1201 const_prop_call(interp::Core.Comp…
+   609         0 …ractinterpretation.jl  1207 const_prop_call(interp::Core.Comp…
+     4         0 …ractinterpretation.jl   249 find_matching_methods(𝕃::Core.Com…
+    88         0 …ractinterpretation.jl   288 find_matching_methods(𝕃::Core.Com…
+     1         0 …ractinterpretation.jl   295 find_matching_methods(𝕃::Core.Com…
+     1         0 …ractinterpretation.jl  1062 force_const_prop
+     1         1 …ractinterpretation.jl   326 from_interprocedural!(interp::Cor…
+     2         2 …ractinterpretation.jl  2651 isdefined_globalref
+     1         1 …ractinterpretation.jl     ? mark_curr_effect_flags!
+     3         0 …ractinterpretation.jl  1248 matching_cache_argtypes(𝕃::Core.C…
+     1         0 …ractinterpretation.jl  1291 matching_cache_argtypes(𝕃::Core.C…
+     1         0 …ractinterpretation.jl   937 maybe_get_const_prop_profitable(i…
+     3         0 …ractinterpretation.jl   955 maybe_get_const_prop_profitable(i…
+    24         0 …ractinterpretation.jl  1165 semi_concrete_eval_call(interp::C…
+    18         0 …ractinterpretation.jl  1168 semi_concrete_eval_call(interp::C…
+     1         0 …ractinterpretation.jl  2959 typeinf_local(interp::Core.Compil…
+     1         0 …ractinterpretation.jl  2990 typeinf_local(interp::Core.Compil…
+     1         0 …ractinterpretation.jl  3051 typeinf_local(interp::Core.Compil…
+     2         0 …ractinterpretation.jl  3064 typeinf_local(interp::Core.Compil…
+     1         0 …ractinterpretation.jl  3068 typeinf_local(interp::Core.Compil…
+  1476         0 …ractinterpretation.jl  3098 typeinf_local(interp::Core.Compil…
+     1         0 …ractinterpretation.jl  3125 typeinf_local(interp::Core.Compil…
+     2         0 …ractinterpretation.jl  3126 typeinf_local(interp::Core.Compil…
+     1         0 …ractinterpretation.jl  3139 typeinf_local(interp::Core.Compil…
+     2         0 …ractinterpretation.jl  3140 typeinf_local(interp::Core.Compil…
+     2         0 …ractinterpretation.jl  3154 typeinf_local(interp::Core.Compil…
+  1477         0 …ractinterpretation.jl  3186 typeinf_nocycle(interp::Core.Comp…
+     1         0 …ractinterpretation.jl  3198 typeinf_nocycle(interp::Core.Comp…
+     1         0 …ractinterpretation.jl  2926 update_bbstate!
+     1         0 …ractinterpretation.jl  2715 widenreturn
+     1         0 …ractinterpretation.jl  2719 widenreturn
+     1         0 …ractinterpretation.jl  2772 widenreturn(𝕃ᵢ::Core.Compiler.Con…
+     1         0 …ractinterpretation.jl  2812 widenreturn
+     1         0 …ractinterpretation.jl  2841 widenreturn
+     1         1 …ractinterpretation.jl  2848 widenreturn_consts(rt::Any)
+     1         0 …ractinterpretation.jl  2837 widenreturn_partials(𝕃ᵢ::Core.Com…
+     1         0 …er/abstractlattice.jl   109 tmeet(::Core.Compiler.JLTypeLatti…
+     1         0 …er/abstractlattice.jl   299 tmeet(a::Any, b::Any)
+     1         0 …er/abstractlattice.jl   300 tmerge(a::Any, b::Any)
+     1         0 …er/abstractlattice.jl   300 tmerge
+     2         2 …er/abstractlattice.jl   151 ⊑
+     3         3 …e/compiler/cicache.jl    56 get
+     1         1 …e/compiler/cicache.jl    13 setindex!
+     1         0 …e/compiler/cicache.jl    70 setindex!
+     1         1 …/compiler/compiler.jl    54 is_return_type
+     1         1 …e/compiler/effects.jl     ? builtin_effects(𝕃::Core.Compiler.…
+     1         0 …er/inferenceresult.jl   211 cache_lookup(lattice::Core.Compil…
+     2         0 …er/inferenceresult.jl   217 cache_lookup(lattice::Core.Compil…
+     6         0 …er/inferenceresult.jl   231 cache_lookup(lattice::Core.Compil…
+     1         0 …er/inferenceresult.jl   199 elim_free_typevars
+     3         0 …er/inferenceresult.jl    76 is_argtype_match
+    15         0 …er/inferenceresult.jl    27 matching_cache_argtypes
+     1         0 …er/inferenceresult.jl    28 matching_cache_argtypes
+    15         0 …er/inferenceresult.jl   109 most_general_argtypes
+     8         8 …er/inferenceresult.jl   111 most_general_argtypes(method::Met…
+     1         0 …er/inferenceresult.jl   115 most_general_argtypes(method::Met…
+     4         1 …er/inferenceresult.jl   151 most_general_argtypes(method::Met…
+     1         0 …er/inferenceresult.jl   176 most_general_argtypes(method::Met…
+     1         0 …er/inferenceresult.jl   179 most_general_argtypes(method::Met…
+     1         0 …er/inferenceresult.jl    62 pick_const_args!(𝕃::Core.Compiler…
+     1         0 …er/inferenceresult.jl    81 va_process_argtypes
+     1         1 …er/inferenceresult.jl    90 va_process_argtypes(va_handler!::…
+     1         0 …ler/inferencestate.jl    16 BitSetBoundedMinPrioritySet
+     1         0 …ler/inferencestate.jl   668 Core.Compiler.IRInterpretationSta…
+     1         0 …ler/inferencestate.jl   672 Core.Compiler.IRInterpretationSta…
+     1         0 …ler/inferencestate.jl   673 Core.Compiler.IRInterpretationSta…
+     4         0 …ler/inferencestate.jl   677 Core.Compiler.IRInterpretationSta…
+     1         0 …ler/inferencestate.jl   681 Core.Compiler.IRInterpretationSta…
+    10        10 …ler/inferencestate.jl   693 Core.Compiler.IRInterpretationSta…
+     6         0 …ler/inferencestate.jl   698 Core.Compiler.IRInterpretationSta…
+     8         0 …ler/inferencestate.jl   699 Core.Compiler.IRInterpretationSta…
+     1         1 …ler/inferencestate.jl   248 Core.Compiler.InferenceState(resu…
+     5         0 …ler/inferencestate.jl   256 Core.Compiler.InferenceState(resu…
+     1         0 …ler/inferencestate.jl   260 Core.Compiler.InferenceState(resu…
+     1         0 …ler/inferencestate.jl   261 Core.Compiler.InferenceState(resu…
+    33         0 …ler/inferencestate.jl   263 Core.Compiler.InferenceState(resu…
+     1         0 …ler/inferencestate.jl   265 Core.Compiler.InferenceState(resu…
+     1         0 …ler/inferencestate.jl   269 Core.Compiler.InferenceState(resu…
+     1         0 …ler/inferencestate.jl   279 Core.Compiler.InferenceState(resu…
+     1         0 …ler/inferencestate.jl   283 Core.Compiler.InferenceState(resu…
+     1         0 …ler/inferencestate.jl   284 Core.Compiler.InferenceState(resu…
+     2         0 …ler/inferencestate.jl   302 Core.Compiler.InferenceState(resu…
+     3         3 …ler/inferencestate.jl   305 Core.Compiler.InferenceState(resu…
+   163         0 …ler/inferencestate.jl   430 Core.Compiler.InferenceState(resu…
+    51         0 …ler/inferencestate.jl   433 Core.Compiler.InferenceState(resu…
+     1         1 …ler/inferencestate.jl   109 TwoPhaseDefUseMap
+     2         0 …ler/inferencestate.jl   127 TwoPhaseDefUseMap
+     1         0 …ler/inferencestate.jl   130 TwoPhaseDefUseMap
+     2         0 …ler/inferencestate.jl   785 add_backedge!
+     1         0 …ler/inferencestate.jl   337 compute_trycatch(code::Vector{Any…
+     4         0 …ler/inferencestate.jl   178 get!
+     1         0 …ler/inferencestate.jl   868 get_max_methods
+     1         0 …ler/inferencestate.jl   876 get_max_methods
+     1         0 …ler/inferencestate.jl   889 get_max_methods_for_module
+     1         1 …ler/inferencestate.jl   891 get_max_methods_for_module
+     1         1 …ler/inferencestate.jl   609 get_stmt_edges!
+     1         0 …ler/inferencestate.jl   579 record_ssa_assign!(𝕃ᵢ::Core.Compi…
+     1         0 …ler/inferencestate.jl   583 record_ssa_assign!(𝕃ᵢ::Core.Compi…
+    90         0 …mpiler/methodtable.jl    74 #findall#281
+    33         0 …mpiler/methodtable.jl   113 findall(sig::Type, table::Core.Co…
+     1         0 …mpiler/methodtable.jl   116 findall(sig::Type, table::Core.Co…
+    58         0 …mpiler/methodtable.jl   119 findall(sig::Type, table::Core.Co…
+    88         0 …mpiler/methodtable.jl   105 _findall
+     1         1 …mpiler/methodtable.jl   106 _findall
+     1         0 …mpiler/methodtable.jl   107 _findall
+    90         0 …mpiler/methodtable.jl    73 findall
+    92         0 …mpiler/methodtable.jl   110 findall
+     1         1 …mpiler/methodtable.jl    15 iterate
+     1         0 …/compiler/optimize.jl   379 abstract_eval_ssavalue
+   261         0 …/compiler/optimize.jl   337 argextype
+     1         1 …/compiler/optimize.jl   339 argextype(x::Any, compact::Core.C…
+     5         0 …/compiler/optimize.jl   340 argextype
+     1         1 …/compiler/optimize.jl   340 argextype(x::Any, compact::Core.C…
+     3         1 …/compiler/optimize.jl   341 argextype(x::Any, compact::Core.C…
+     2         2 …/compiler/optimize.jl   344 argextype(x::Any, src::Core.Compi…
+     1         1 …/compiler/optimize.jl   347 argextype(x::Any, src::Core.Compi…
+     1         0 …/compiler/optimize.jl   363 argextype(x::Any, src::Core.Compi…
+   258       258 …/compiler/optimize.jl   367 argextype(x::Any, src::Core.Compi…
+     1         0 …/compiler/optimize.jl   369 argextype(x::Any, src::Core.Compi…
+     2         0 …/compiler/optimize.jl   526 convert_to_ircode(ci::Core.CodeIn…
+    65         0 …/compiler/optimize.jl   531 convert_to_ircode(ci::Core.CodeIn…
+     1         0 …/compiler/optimize.jl   567 convert_to_ircode(ci::Core.CodeIn…
+     1         0 …/compiler/optimize.jl   570 convert_to_ircode(ci::Core.CodeIn…
+     1         0 …/compiler/optimize.jl   596 convert_to_ircode(ci::Core.CodeIn…
+     3         0 …/compiler/optimize.jl   602 convert_to_ircode(ci::Core.CodeIn…
+     2         0 …/compiler/optimize.jl   608 convert_to_ircode(ci::Core.CodeIn…
+     1         1 …/compiler/optimize.jl     ? finish(interp::Core.Compiler.Nati…
+     1         0 …/compiler/optimize.jl   445 finish(interp::Core.Compiler.Nati…
+     1         0 …/compiler/optimize.jl   755 inline_cost(ir::Core.Compiler.IRC…
+    12         0 …/compiler/optimize.jl   176 ir_to_codeinf!
+     4         0 …/compiler/optimize.jl   183 ir_to_codeinf!
+     8         0 …/compiler/optimize.jl   184 ir_to_codeinf!
+   836         0 …/compiler/optimize.jl   453 optimize
+     2         0 …/compiler/optimize.jl   454 optimize
+   836         1 …/compiler/optimize.jl   489 run_passes(ci::Core.CodeInfo, sv:…
+   836         0 …/compiler/optimize.jl   504 run_passes
+    15         0 …/compiler/optimize.jl   623 slot2reg(ir::Core.Compiler.IRCode…
+    10         0 …/compiler/optimize.jl   624 slot2reg(ir::Core.Compiler.IRCode…
+    83         0 …/compiler/optimize.jl   626 slot2reg(ir::Core.Compiler.IRCode…
+     1         1 …/compiler/optimize.jl   666 statement_cost(ex::Expr, line::In…
+     1         0 …/compiler/optimize.jl   737 statement_or_branch_cost
+     1         1 …/compiler/optimize.jl   226 stmt_effect_flags(𝕃ₒ::Core.Compil…
+     2         2 …/compiler/optimize.jl   232 stmt_effect_flags(𝕃ₒ::Core.Compil…
+     2         0 …/compiler/optimize.jl   244 stmt_effect_flags(𝕃ₒ::Core.Compil…
+     2         2 …/compiler/optimize.jl   257 stmt_effect_flags(𝕃ₒ::Core.Compil…
+     2         0 …/compiler/optimize.jl   261 stmt_effect_flags(𝕃ₒ::Core.Compil…
+     1         1 …/compiler/optimize.jl     ? widen_all_consts!(src::Core.CodeI…
+     6         5 …/compiler/optimize.jl   193 widen_all_consts!(src::Core.CodeI…
+     1         1 …/compiler/optimize.jl   203 widen_all_consts!(src::Core.CodeI…
+     1         0 @Base/compiler/sort.jl    68 #searchsortedfirst#277
+     1         1 @Base/compiler/sort.jl    74 sort!(v::Vector{Int64}; by::Core.…
+     1         1 @Base/compiler/sort.jl     ? compute_basic_blocks(stmts::Vecto…
+     1         0 @Base/compiler/sort.jl    66 searchsortedfirst
+     1         0 @Base/compiler/sort.jl    68 searchsortedfirst
+     6         0 …r/ssair/basicblock.jl    25 BasicBlock
+     1         1 …r/ssair/basicblock.jl    14 iterate
+     2         2 …iler/ssair/domtree.jl     ? DFS!(D::Core.Compiler.DFSTree, bl…
+     1         0 …iler/ssair/domtree.jl   113 DFS!(D::Core.Compiler.DFSTree, bl…
+     1         0 …iler/ssair/domtree.jl   137 DFS!(D::Core.Compiler.DFSTree, bl…
+     1         0 …iler/ssair/domtree.jl   171 DFS!(D::Core.Compiler.DFSTree, bl…
+     4         0 …iler/ssair/domtree.jl   207 DomTreeNode
+     1         0 …iler/ssair/domtree.jl   225 GenericDomTree
+     1         0 …iler/ssair/domtree.jl   306 SNCA!(domtree::Core.Compiler.Gene…
+     6         0 …iler/ssair/domtree.jl   253 compute_domtree_nodes!(domtree::C…
+     1         0 …iler/ssair/domtree.jl   257 compute_domtree_nodes!(domtree::C…
+     5         0 …iler/ssair/domtree.jl   267 compute_domtree_nodes!(domtree::C…
+     1         1 …iler/ssair/domtree.jl   228 construct_domtree(blocks::Vector{…
+    19         0 …iler/ssair/domtree.jl   229 construct_domtree(blocks::Vector{…
+     1         0 …iler/ssair/domtree.jl   102 copy!(dst::Core.Compiler.DFSTree,…
+     5         0 …iler/ssair/domtree.jl   239 update_domtree!
+     1         0 …iler/ssair/domtree.jl   246 update_domtree!
+    12         0 …iler/ssair/domtree.jl   247 update_domtree!
+     1         1 …iler/ssair/domtree.jl   272 update_level!(nodes::Vector{Core.…
+     3         0 …iler/ssair/domtree.jl   273 update_level!(nodes::Vector{Core.…
+     1         0 …iler/ssair/domtree.jl   274 update_level!(nodes::Vector{Core.…
+     1         1 …ompiler/ssair/heap.jl    41 heappop!(xs::Vector{Tuple{Int64, …
+     1         0 …ler/ssair/inlining.jl   177 #441
+     1         1 …ler/ssair/inlining.jl     ? analyze_method!(match::Core.Metho…
+     1         1 …ler/ssair/inlining.jl   950 analyze_method!(match::Core.Metho…
+     1         0 …ler/ssair/inlining.jl   980 analyze_method!(match::Core.Metho…
+    58         0 …ler/ssair/inlining.jl   981 analyze_method!(match::Core.Metho…
+     4         0 …ler/ssair/inlining.jl   822 compileable_specialization(mi::Co…
+     3         0 …ler/ssair/inlining.jl  1322 handle_any_const_result!(cases::V…
+    12         0 …ler/ssair/inlining.jl  1326 handle_any_const_result!(cases::V…
+    65         0 …ler/ssair/inlining.jl  1329 handle_any_const_result!(cases::V…
+    11         0 …ler/ssair/inlining.jl  1483 handle_const_prop_result!(cases::…
+     1         0 …ler/ssair/inlining.jl  1485 handle_const_prop_result!(cases::…
+     4         4 …ler/ssair/inlining.jl  1466 handle_match!(cases::Vector{Core.…
+    61         0 …ler/ssair/inlining.jl  1467 handle_match!(cases::Vector{Core.…
+     2         0 …ler/ssair/inlining.jl  1508 handle_semi_concrete_result!(case…
+     1         0 …ler/ssair/inlining.jl  1510 handle_semi_concrete_result!(case…
+     1         1 …ler/ssair/inlining.jl     ? resolve_todo(mi::Core.MethodInsta…
+     4         0 …ler/ssair/inlining.jl   904 resolve_todo(mi::Core.MethodInsta…
+    63         0 …ler/ssair/inlining.jl   908 resolve_todo(mi::Core.MethodInsta…
+     1         1 …ler/ssair/inlining.jl    86 CFGInliningState
+     1         0 …ler/ssair/inlining.jl    97 Core.Compiler.CFGInliningState(ir…
+     1         1 …ler/ssair/inlining.jl    66 add_inlining_backedge!(::Core.Com…
+    61         0 …ler/ssair/inlining.jl   950 analyze_method!
+     1         0 …ler/ssair/inlining.jl  1660 assemble_inline_todo!(ir::Core.Co…
+   274         0 …ler/ssair/inlining.jl  1663 assemble_inline_todo!(ir::Core.Co…
+     1         1 …ler/ssair/inlining.jl  1678 assemble_inline_todo!(ir::Core.Co…
+    98         0 …ler/ssair/inlining.jl  1698 assemble_inline_todo!(ir::Core.Co…
+     1         0 …ler/ssair/inlining.jl   654 batch_inline!(ir::Core.Compiler.I…
+     3         0 …ler/ssair/inlining.jl   662 batch_inline!(ir::Core.Compiler.I…
+     3         0 …ler/ssair/inlining.jl   665 batch_inline!(ir::Core.Compiler.I…
+     6         0 …ler/ssair/inlining.jl   672 batch_inline!(ir::Core.Compiler.I…
+     3         0 …ler/ssair/inlining.jl   681 batch_inline!(ir::Core.Compiler.I…
+     1         0 …ler/ssair/inlining.jl   683 batch_inline!(ir::Core.Compiler.I…
+     1         0 …ler/ssair/inlining.jl   703 batch_inline!(ir::Core.Compiler.I…
+    62         0 …ler/ssair/inlining.jl   710 batch_inline!(ir::Core.Compiler.I…
+     2         0 …ler/ssair/inlining.jl   712 batch_inline!(ir::Core.Compiler.I…
+     1         0 …ler/ssair/inlining.jl   714 batch_inline!(ir::Core.Compiler.I…
+     2         0 …ler/ssair/inlining.jl   730 batch_inline!(ir::Core.Compiler.I…
+     6         0 …ler/ssair/inlining.jl   732 batch_inline!(ir::Core.Compiler.I…
+     1         1 …ler/ssair/inlining.jl  1074 call_sig(ir::Core.Compiler.IRCode…
+     1         0 …ler/ssair/inlining.jl  1083 call_sig(ir::Core.Compiler.IRCode…
+   258         0 …ler/ssair/inlining.jl  1091 call_sig(ir::Core.Compiler.IRCode…
+     1         0 …ler/ssair/inlining.jl   162 cfg_inline_item!(ir::Core.Compile…
+     1         0 …ler/ssair/inlining.jl   176 cfg_inline_item!(ir::Core.Compile…
+     1         0 …ler/ssair/inlining.jl   197 cfg_inline_item!(ir::Core.Compile…
+     8         0 …ler/ssair/inlining.jl  1233 check_effect_free!
+     8         0 …ler/ssair/inlining.jl  1236 check_effect_free!
+     4         0 …ler/ssair/inlining.jl   817 compileable_specialization
+     2         0 …ler/ssair/inlining.jl  1354 compute_inlining_cases(info::Core…
+     1         0 …ler/ssair/inlining.jl  1366 compute_inlining_cases(info::Core…
+     1         0 …ler/ssair/inlining.jl  1389 compute_inlining_cases(info::Core…
+     1         0 …ler/ssair/inlining.jl  1390 compute_inlining_cases(info::Core…
+    80         0 …ler/ssair/inlining.jl  1404 compute_inlining_cases(info::Core…
+     1         1 …ler/ssair/inlining.jl  1732 early_inline_special_case(ir::Cor…
+     2         0 …ler/ssair/inlining.jl   265 finish_cfg_inline!(state::Core.Co…
+     1         0 …ler/ssair/inlining.jl   281 finish_cfg_inline!(state::Core.Co…
+    80         0 …ler/ssair/inlining.jl  1312 handle_any_const_result!
+    86         0 …ler/ssair/inlining.jl  1450 handle_call!
+    12         0 …ler/ssair/inlining.jl  1453 handle_call!
+     1         0 …ler/ssair/inlining.jl  1542 handle_cases!(todo::Vector{Pair{I…
+    12         0 …ler/ssair/inlining.jl  1473 handle_const_prop_result!
+    65         0 …ler/ssair/inlining.jl  1457 handle_match!
+     3         0 …ler/ssair/inlining.jl  1501 handle_semi_concrete_result!
+     1         0 …ler/ssair/inlining.jl  1008 handle_single_case!
+     1         0 …ler/ssair/inlining.jl  1014 handle_single_case!(todo::Vector{…
+     1         0 …ler/ssair/inlining.jl  1341 info_effects
+     2         0 …ler/ssair/inlining.jl  1156 inline_apply!(todo::Vector{Pair{I…
+     2         2 …ler/ssair/inlining.jl   390 ir_inline_item!(compact::Core.Com…
+     7         0 …ler/ssair/inlining.jl   397 ir_inline_item!(compact::Core.Com…
+     5         0 …ler/ssair/inlining.jl   415 ir_inline_item!(compact::Core.Com…
+     3         0 …ler/ssair/inlining.jl   420 ir_inline_item!(compact::Core.Com…
+     3         0 …ler/ssair/inlining.jl   421 ir_inline_item!(compact::Core.Com…
+     3         0 …ler/ssair/inlining.jl   432 ir_inline_item!(compact::Core.Com…
+     6         0 …ler/ssair/inlining.jl   433 ir_inline_item!(compact::Core.Com…
+     2         0 …ler/ssair/inlining.jl   445 ir_inline_item!(compact::Core.Com…
+     3         0 …ler/ssair/inlining.jl   447 ir_inline_item!(compact::Core.Com…
+     5         0 …ler/ssair/inlining.jl   448 ir_inline_item!(compact::Core.Com…
+     1         0 …ler/ssair/inlining.jl   458 ir_inline_item!(compact::Core.Com…
+     1         0 …ler/ssair/inlining.jl   464 ir_inline_item!(compact::Core.Com…
+     8         0 …ler/ssair/inlining.jl   466 ir_inline_item!(compact::Core.Com…
+    14         0 …ler/ssair/inlining.jl   467 ir_inline_item!(compact::Core.Com…
+     1         0 …ler/ssair/inlining.jl   342 ir_inline_linetable!(linetable::V…
+     5         0 …ler/ssair/inlining.jl   352 ir_inline_linetable!(linetable::V…
+     1         1 …ler/ssair/inlining.jl   559 ir_inline_unionsplit!(compact::Co…
+     2         0 …ler/ssair/inlining.jl   611 ir_inline_unionsplit!(compact::Co…
+     1         1 …ler/ssair/inlining.jl   360 ir_prepare_inlining!(insert_node!…
+     7         1 …ler/ssair/inlining.jl   365 ir_prepare_inlining!(insert_node!…
+     1         1 …ler/ssair/inlining.jl  1170 is_builtin
+     1         0 …ler/ssair/inlining.jl  1171 is_builtin
+     1         1 …ler/ssair/inlining.jl  1766 late_inline_special_case!(ir::Cor…
+     2         0 …ler/ssair/inlining.jl  1255 process_simple!(todo::Vector{Pair…
+   259         0 …ler/ssair/inlining.jl  1273 process_simple!(todo::Vector{Pair…
+     2         0 …ler/ssair/inlining.jl  1277 process_simple!(todo::Vector{Pair…
+     1         0 …ler/ssair/inlining.jl  1281 process_simple!(todo::Vector{Pair…
+     6         0 …ler/ssair/inlining.jl  1287 process_simple!(todo::Vector{Pair…
+     2         0 …ler/ssair/inlining.jl  1295 process_simple!(todo::Vector{Pair…
+    69         0 …ler/ssair/inlining.jl   871 resolve_todo
+    35        35 …ler/ssair/inlining.jl   985 retrieve_ir_for_inlining
+    17         0 …ler/ssair/inlining.jl   986 retrieve_ir_for_inlining
+    11         0 …ler/ssair/inlining.jl   988 retrieve_ir_for_inlining
+     2         0 …ler/ssair/inlining.jl   989 retrieve_ir_for_inlining
+     1         0 …ler/ssair/inlining.jl   755 rewrite_apply_exprargs!(todo::Vec…
+     1         0 …ler/ssair/inlining.jl   783 rewrite_apply_exprargs!(todo::Vec…
+     2         0 …ler/ssair/inlining.jl  1497 semiconcrete_result_item
+   374         0 …ler/ssair/inlining.jl    78 ssa_inlining_pass!
+    93         0 …ler/ssair/inlining.jl    81 ssa_inlining_pass!
+     1         0 …ler/ssair/inlining.jl  1814 ssa_substitute!
+     7         0 …ler/ssair/inlining.jl  1815 ssa_substitute!
+     1         1 …ler/ssair/inlining.jl  1832 ssa_substitute_op!(insert_node!::…
+     6         1 …ler/ssair/inlining.jl  1897 ssa_substitute_op!(insert_node!::…
+     1         0 …ler/ssair/inlining.jl  1898 ssa_substitute_op!(insert_node!::…
+     1         1 …/compiler/ssair/ir.jl   573 CFGTransformState!(blocks::Vector…
+     1         0 …/compiler/ssair/ir.jl   606 CFGTransformState!(blocks::Vector…
+     7         0 …/compiler/ssair/ir.jl   343 IRCode
+     2         0 …/compiler/ssair/ir.jl   639 Core.Compiler.IncrementalCompact(…
+    16         0 …/compiler/ssair/ir.jl   641 Core.Compiler.IncrementalCompact(…
+     1         0 …/compiler/ssair/ir.jl   643 Core.Compiler.IncrementalCompact(…
+     1         0 …/compiler/ssair/ir.jl   645 Core.Compiler.IncrementalCompact(…
+     1         0 …/compiler/ssair/ir.jl   646 Core.Compiler.IncrementalCompact(…
+    30         0 …/compiler/ssair/ir.jl   647 Core.Compiler.IncrementalCompact(…
+     5         0 …/compiler/ssair/ir.jl   648 Core.Compiler.IncrementalCompact(…
+     1         0 …/compiler/ssair/ir.jl   649 Core.Compiler.IncrementalCompact(…
+     1         1 …/compiler/ssair/ir.jl   650 Core.Compiler.IncrementalCompact(…
+     3         0 …/compiler/ssair/ir.jl   658 Core.Compiler.IncrementalCompact(…
+     1         0 …/compiler/ssair/ir.jl   660 Core.Compiler.IncrementalCompact(…
+     3         0 …/compiler/ssair/ir.jl   662 Core.Compiler.IncrementalCompact(…
+    54         0 …/compiler/ssair/ir.jl   673 IncrementalCompact
+     2         0 …/compiler/ssair/ir.jl   239 Instruction
+     1         1 …/compiler/ssair/ir.jl   195 Core.Compiler.InstructionStream(l…
+    31         0 …/compiler/ssair/ir.jl   196 Core.Compiler.InstructionStream(l…
+     8         0 …/compiler/ssair/ir.jl   197 Core.Compiler.InstructionStream(l…
+     4         0 …/compiler/ssair/ir.jl   198 Core.Compiler.InstructionStream(l…
+     1         0 …/compiler/ssair/ir.jl   199 Core.Compiler.InstructionStream(l…
+     6         0 …/compiler/ssair/ir.jl   200 Core.Compiler.InstructionStream(l…
+    27         0 …/compiler/ssair/ir.jl   201 Core.Compiler.InstructionStream(l…
+    69         1 …/compiler/ssair/ir.jl   278 NewNodeStream
+     4         4 …/compiler/ssair/ir.jl     ? _advance(stmt::Any, op::Int64)
+     3         3 …/compiler/ssair/ir.jl   521 _advance(stmt::Any, op::Int64)
+    19         2 …/compiler/ssair/ir.jl   524 _advance(stmt::Any, op::Int64)
+     2         2 …/compiler/ssair/ir.jl   526 _advance(stmt::Any, op::Int64)
+     1         1 …/compiler/ssair/ir.jl   786 _count_added_node!(compact::Core.…
+     1         1 …/compiler/ssair/ir.jl   787 _count_added_node!(compact::Core.…
+     1         1 …/compiler/ssair/ir.jl   789 _count_added_node!(compact::Core.…
+     5         5 …/compiler/ssair/ir.jl     ? _useref_getindex(stmt::Any, op::I…
+    10        10 …/compiler/ssair/ir.jl   409 _useref_getindex(stmt::Any, op::I…
+     7         7 …/compiler/ssair/ir.jl   410 _useref_getindex(stmt::Any, op::I…
+     1         1 …/compiler/ssair/ir.jl   421 _useref_getindex(stmt::Any, op::I…
+     4         0 …/compiler/ssair/ir.jl   422 _useref_getindex(stmt::Any, op::I…
+     1         0 …/compiler/ssair/ir.jl   424 _useref_getindex(stmt::Any, op::I…
+     1         1 …/compiler/ssair/ir.jl   428 _useref_getindex(stmt::Any, op::I…
+     2         2 …/compiler/ssair/ir.jl   465 _useref_setindex!(stmt::Any, op::…
+     2         2 …/compiler/ssair/ir.jl   466 _useref_setindex!(stmt::Any, op::…
+     2         0 …/compiler/ssair/ir.jl   479 _useref_setindex!(stmt::Any, op::…
+     1         1 …/compiler/ssair/ir.jl   483 _useref_setindex!(stmt::Any, op::…
+     2         0 …/compiler/ssair/ir.jl   283 add_inst!
+     2         1 …/compiler/ssair/ir.jl   209 add_new_idx!
+     3         0 …/compiler/ssair/ir.jl    48 basic_blocks_starts
+     1         1 …/compiler/ssair/ir.jl    54 basic_blocks_starts
+     1         1 …/compiler/ssair/ir.jl    75 basic_blocks_starts
+     1         0 …/compiler/ssair/ir.jl    38 block_for_inst
+     1         0 …/compiler/ssair/ir.jl    45 block_for_inst
+    84         0 …/compiler/ssair/ir.jl  1855 compact!
+    42         0 …/compiler/ssair/ir.jl  1855 compact!(code::Core.Compiler.IRCo…
+    37         0 …/compiler/ssair/ir.jl  1857 compact!(code::Core.Compiler.IRCo…
+     5         0 …/compiler/ssair/ir.jl  1858 compact!(code::Core.Compiler.IRCo…
+     2         0 …/compiler/ssair/ir.jl  1834 complete(compact::Core.Compiler.I…
+     6         0 …/compiler/ssair/ir.jl    95 compute_basic_blocks(stmts::Vecto…
+     3         0 …/compiler/ssair/ir.jl    98 compute_basic_blocks(stmts::Vecto…
+     6         0 …/compiler/ssair/ir.jl   101 compute_basic_blocks(stmts::Vecto…
+     1         0 …/compiler/ssair/ir.jl   125 compute_basic_blocks(stmts::Vecto…
+     1         0 …/compiler/ssair/ir.jl   213 copy
+     2         0 …/compiler/ssair/ir.jl   348 copy(ir::Core.Compiler.IRCode)
+     1         0 …/compiler/ssair/ir.jl   799 count_added_node!(compact::Core.C…
+     5         0 …/compiler/ssair/ir.jl   800 count_added_node!(compact::Core.C…
+     1         0 …/compiler/ssair/ir.jl   801 count_added_node!(compact::Core.C…
+     3         0 …/compiler/ssair/ir.jl  1827 finish(compact::Core.Compiler.Inc…
+     7         0 …/compiler/ssair/ir.jl  1828 finish(compact::Core.Compiler.Inc…
+     1         0 …/compiler/ssair/ir.jl  1829 finish(compact::Core.Compiler.Inc…
+     1         1 …/compiler/ssair/ir.jl  1728 fixup_node(compact::Core.Compiler…
+     1         0 …/compiler/ssair/ir.jl  1730 fixup_node(compact::Core.Compiler…
+     1         0 …/compiler/ssair/ir.jl  1717 fixup_phinode_values!(compact::Co…
+    10         2 …/compiler/ssair/ir.jl   243 getindex
+    13         1 …/compiler/ssair/ir.jl   453 getindex
+     1         0 …/compiler/ssair/ir.jl  1056 getindex
+     1         0 …/compiler/ssair/ir.jl  1069 getindex
+     2         0 …/compiler/ssair/ir.jl   555 insert_node!(ir::Core.Compiler.IR…
+     1         0 …/compiler/ssair/ir.jl   557 insert_node!(ir::Core.Compiler.IR…
+     3         0 …/compiler/ssair/ir.jl   561 insert_node!
+     3         1 …/compiler/ssair/ir.jl   456 is_relevant_expr
+     2         2 …/compiler/ssair/ir.jl     ? iterate
+    10         0 …/compiler/ssair/ir.jl   531 iterate
+    33         5 …/compiler/ssair/ir.jl   532 iterate
+     1         1 …/compiler/ssair/ir.jl   533 iterate
+    78         0 …/compiler/ssair/ir.jl  1592 iterate
+     1         0 …/compiler/ssair/ir.jl  1595 iterate
+     1         0 …/compiler/ssair/ir.jl  1868 iterate
+     4         4 …/compiler/ssair/ir.jl     ? iterate_compact(compact::Core.Com…
+     1         1 …/compiler/ssair/ir.jl  1603 iterate_compact(compact::Core.Com…
+     1         1 …/compiler/ssair/ir.jl  1610 iterate_compact(compact::Core.Com…
+     1         1 …/compiler/ssair/ir.jl  1612 iterate_compact(compact::Core.Com…
+     1         1 …/compiler/ssair/ir.jl  1614 iterate_compact(compact::Core.Com…
+     2         0 …/compiler/ssair/ir.jl  1649 iterate_compact(compact::Core.Com…
+     1         0 …/compiler/ssair/ir.jl  1654 iterate_compact(compact::Core.Com…
+     4         0 …/compiler/ssair/ir.jl  1669 iterate_compact(compact::Core.Com…
+    57         1 …/compiler/ssair/ir.jl  1670 iterate_compact(compact::Core.Com…
+     3         0 …/compiler/ssair/ir.jl  1672 iterate_compact(compact::Core.Com…
+     1         0 …/compiler/ssair/ir.jl  1682 iterate_compact(compact::Core.Com…
+     1         1 …/compiler/ssair/ir.jl  1683 iterate_compact(compact::Core.Com…
+     1         1 …/compiler/ssair/ir.jl  1767 just_fixup!(compact::Core.Compile…
+     4         0 …/compiler/ssair/ir.jl  1768 just_fixup!
+     1         0 …/compiler/ssair/ir.jl  1778 just_fixup!(compact::Core.Compile…
+     1         1 …/compiler/ssair/ir.jl  1779 just_fixup!(compact::Core.Compile…
+     1         1 …/compiler/ssair/ir.jl     ? kill_current_use!(compact::Core.C…
+     1         1 …/compiler/ssair/ir.jl   933 kill_current_use!(compact::Core.C…
+     1         1 …/compiler/ssair/ir.jl   944 kill_current_uses!(compact::Core.…
+     2         0 …/compiler/ssair/ir.jl   945 kill_current_uses!(compact::Core.…
+     1         0 …/compiler/ssair/ir.jl   946 kill_current_uses!(compact::Core.…
+     3         0 …/compiler/ssair/ir.jl   947 kill_current_uses!(compact::Core.…
+     2         0 …/compiler/ssair/ir.jl   205 length
+     1         0 …/compiler/ssair/ir.jl  1692 maybe_erase_unused!(callback::typ…
+     4         0 …/compiler/ssair/ir.jl  1818 non_dce_finish!
+     1         0 …/compiler/ssair/ir.jl  1537 process_newnode!(compact::Core.Co…
+     1         0 …/compiler/ssair/ir.jl  1538 process_newnode!(compact::Core.Co…
+     1         1 …/compiler/ssair/ir.jl     ? process_node!(compact::Core.Compi…
+     1         1 …/compiler/ssair/ir.jl  1264 process_node!(compact::Core.Compi…
+     1         1 …/compiler/ssair/ir.jl  1271 process_node!(compact::Core.Compi…
+     1         1 …/compiler/ssair/ir.jl  1279 process_node!(compact::Core.Compi…
+     1         0 …/compiler/ssair/ir.jl  1290 process_node!(compact::Core.Compi…
+    31         0 …/compiler/ssair/ir.jl  1327 process_node!(compact::Core.Compi…
+     1         0 …/compiler/ssair/ir.jl  1341 process_node!(compact::Core.Compi…
+     4         4 …/compiler/ssair/ir.jl  1342 process_node!(compact::Core.Compi…
+     3         0 …/compiler/ssair/ir.jl  1343 process_node!(compact::Core.Compi…
+     1         0 …/compiler/ssair/ir.jl  1345 process_node!(compact::Core.Compi…
+     1         0 …/compiler/ssair/ir.jl  1347 process_node!(compact::Core.Compi…
+     1         1 …/compiler/ssair/ir.jl  1361 process_node!(compact::Core.Compi…
+     2         0 …/compiler/ssair/ir.jl  1378 process_node!(compact::Core.Compi…
+     4         0 …/compiler/ssair/ir.jl  1379 process_node!(compact::Core.Compi…
+     1         1 …/compiler/ssair/ir.jl  1381 process_node!(compact::Core.Compi…
+     1         0 …/compiler/ssair/ir.jl  1422 process_node!(compact::Core.Compi…
+     1         0 …/compiler/ssair/ir.jl  1103 process_phinode_values(old_values…
+     1         0 …/compiler/ssair/ir.jl   825 recompute_inst_flag
+     1         0 …/compiler/ssair/ir.jl  1136 renumber_ssa2
+     4         4 …/compiler/ssair/ir.jl  1138 renumber_ssa2
+     2         2 …/compiler/ssair/ir.jl     ? renumber_ssa2!(stmt::Any, ssanums…
+     3         0 …/compiler/ssair/ir.jl  1160 renumber_ssa2!(stmt::Any, ssanums…
+     3         0 …/compiler/ssair/ir.jl  1161 renumber_ssa2!(stmt::Any, ssanums…
+     5         0 …/compiler/ssair/ir.jl  1162 renumber_ssa2!(stmt::Any, ssanums…
+     1         1 …/compiler/ssair/ir.jl  1163 renumber_ssa2!(stmt::Any, ssanums…
+     4         0 …/compiler/ssair/ir.jl  1167 renumber_ssa2!(stmt::Any, ssanums…
+     5         0 …/compiler/ssair/ir.jl  1172 renumber_ssa2!(stmt::Any, ssanums…
+     8         0 …/compiler/ssair/ir.jl  1173 renumber_ssa2!(stmt::Any, ssanums…
+     3         0 …/compiler/ssair/ir.jl   222 resize!(stmts::Core.Compiler.Inst…
+     1         0 …/compiler/ssair/ir.jl   226 resize!(stmts::Core.Compiler.Inst…
+     3         0 …/compiler/ssair/ir.jl  1472 resize!(compact::Core.Compiler.In…
+     5         0 …/compiler/ssair/ir.jl   246 setindex!
+     3         0 …/compiler/ssair/ir.jl   252 setindex!
+     2         0 …/compiler/ssair/ir.jl   253 setindex!
+     1         0 …/compiler/ssair/ir.jl   254 setindex!
+     2         0 …/compiler/ssair/ir.jl   264 setindex!
+     9         1 …/compiler/ssair/ir.jl   510 setindex!
+     7         0 …/compiler/ssair/ir.jl   954 setindex!(compact::Core.Compiler.…
+     2         0 …/compiler/ssair/ir.jl   955 setindex!(compact::Core.Compiler.…
+     7         0 …/compiler/ssair/ir.jl   957 setindex!(compact::Core.Compiler.…
+    18         1 …/compiler/ssair/ir.jl   986 setindex!
+     8         0 …/compiler/ssair/ir.jl  1799 simple_dce!
+     7         6 …/compiler/ssair/ir.jl  1806 simple_dce!(callback::Function, c…
+     1         0 …/compiler/ssair/ir.jl  1808 simple_dce!(callback::Function, c…
+     2         2 …/compiler/ssair/ir.jl  1525 stmts_awaiting_insertion
+     5         2 …/compiler/ssair/ir.jl   515 userefs
+     1         0 …ler/ssair/irinterp.jl   213 _ir_abstract_constant_propagation…
+     1         0 …ler/ssair/irinterp.jl   234 _ir_abstract_constant_propagation…
+     1         1 …ler/ssair/irinterp.jl   236 _ir_abstract_constant_propagation…
+     1         0 …ler/ssair/irinterp.jl   242 _ir_abstract_constant_propagation…
+     9         0 …ler/ssair/irinterp.jl   251 _ir_abstract_constant_propagation…
+     1         0 …ler/ssair/irinterp.jl   254 _ir_abstract_constant_propagation…
+     2         0 …ler/ssair/irinterp.jl   269 _ir_abstract_constant_propagation…
+     1         0 …ler/ssair/irinterp.jl   271 _ir_abstract_constant_propagation…
+     1         0 …ler/ssair/irinterp.jl   354 _ir_abstract_constant_propagation…
+    18         0 …ler/ssair/irinterp.jl   206 _ir_abstract_constant_propagation…
+     5         0 …ler/ssair/irinterp.jl    48 abstract_call(interp::Core.Compil…
+     1         0 …ler/ssair/irinterp.jl    12 concrete_eval_invoke(interp::Core…
+     1         1 …ler/ssair/irinterp.jl   375 ir_abstract_constant_propagation(…
+    18         0 …ler/ssair/irinterp.jl   384 ir_abstract_constant_propagation(…
+     1         1 …ler/ssair/irinterp.jl   181 process_terminator!(ir::Core.Comp…
+     1         0 …ler/ssair/irinterp.jl   182 process_terminator!(ir::Core.Comp…
+     8         0 …ler/ssair/irinterp.jl   126 reprocess_instruction!(interp::Co…
+     1         0 …ler/ssair/irinterp.jl   129 reprocess_instruction!(interp::Co…
+    17         0 …piler/ssair/legacy.jl    56 inflate_ir
+     8         0 …piler/ssair/legacy.jl    13 inflate_ir!(ci::Core.CodeInfo, li…
+    18         1 …piler/ssair/legacy.jl    14 inflate_ir!(ci::Core.CodeInfo, li…
+     9         0 …piler/ssair/legacy.jl    18 inflate_ir!(ci::Core.CodeInfo, sp…
+     1         0 …piler/ssair/legacy.jl    27 inflate_ir!(ci::Core.CodeInfo, sp…
+     2         0 …piler/ssair/legacy.jl    44 inflate_ir!(ci::Core.CodeInfo, sp…
+     5         0 …piler/ssair/legacy.jl    45 inflate_ir!(ci::Core.CodeInfo, sp…
+     1         1 …piler/ssair/legacy.jl    73 replace_code_newstyle!(ci::Core.C…
+     1         0 …piler/ssair/legacy.jl    89 replace_code_newstyle!(ci::Core.C…
+     2         1 …piler/ssair/legacy.jl    95 replace_code_newstyle!(ci::Core.C…
+     1         0 …piler/ssair/passes.jl   233 (::Core.Compiler.var"#472#473")(p…
+     1         1 …piler/ssair/passes.jl   614 LiftedPhilike
+     1         0 …piler/ssair/passes.jl  1681 adce_pass!(ir::Core.Compiler.IRCo…
+     7         0 …piler/ssair/passes.jl  1683 adce_pass!(ir::Core.Compiler.IRCo…
+     2         0 …piler/ssair/passes.jl  1684 adce_pass!(ir::Core.Compiler.IRCo…
+     1         1 …piler/ssair/passes.jl  1701 adce_pass!(ir::Core.Compiler.IRCo…
+     2         0 …piler/ssair/passes.jl  1710 adce_pass!(ir::Core.Compiler.IRCo…
+     1         0 …piler/ssair/passes.jl  1711 adce_pass!(ir::Core.Compiler.IRCo…
+     7         0 …piler/ssair/passes.jl  1717 adce_pass!(ir::Core.Compiler.IRCo…
+     5         0 …piler/ssair/passes.jl  1719 adce_pass!(ir::Core.Compiler.IRCo…
+     1         0 …piler/ssair/passes.jl  1787 adce_pass!(ir::Core.Compiler.IRCo…
+    21         0 …piler/ssair/passes.jl  1791 adce_pass!(ir::Core.Compiler.IRCo…
+     1         0 …piler/ssair/passes.jl  1801 adce_pass!(ir::Core.Compiler.IRCo…
+     1         1 …piler/ssair/passes.jl     ? collect_leaves
+     3         0 …piler/ssair/passes.jl   181 collect_leaves
+     1         0 …piler/ssair/passes.jl   182 collect_leaves
+     3         0 …piler/ssair/passes.jl   184 collect_leaves
+     2         0 …piler/ssair/passes.jl   353 is_getfield_captures
+     1         1 …piler/ssair/passes.jl     ? is_known_call(x::Any, func::Any, …
+     4         4 …piler/ssair/passes.jl     3 is_known_call(x::Any, func::Any, …
+     6         1 …piler/ssair/passes.jl     5 is_known_call(x::Any, func::Any, …
+     1         1 …piler/ssair/passes.jl     ? is_union_phi
+     4         0 …piler/ssair/passes.jl   542 lift_comparison!
+     1         0 …piler/ssair/passes.jl   552 lift_comparison!
+     2         0 …piler/ssair/passes.jl   581 lift_comparison_leaves!(tfunc::ty…
+     1         0 …piler/ssair/passes.jl   591 lift_comparison_leaves!(tfunc::ty…
+     2         0 …piler/ssair/passes.jl   600 lift_comparison_leaves!(tfunc::ty…
+     1         0 …piler/ssair/passes.jl   373 lift_leaves(compact::Core.Compile…
+     2         0 …piler/ssair/passes.jl   413 lift_leaves(compact::Core.Compile…
+     1         1 …piler/ssair/passes.jl   621 lifted_value(compact::Core.Compil…
+     1         0 …piler/ssair/passes.jl   630 lifted_value(compact::Core.Compil…
+     1         0 …piler/ssair/passes.jl   631 lifted_value(compact::Core.Compil…
+     1         0 …piler/ssair/passes.jl  1610 mark_phi_cycles!(compact::Core.Co…
+     4         0 …piler/ssair/passes.jl   686 perform_lifting!(compact::Core.Co…
+     1         0 …piler/ssair/passes.jl   722 perform_lifting!(compact::Core.Co…
+     2         0 …piler/ssair/passes.jl   751 perform_lifting!(compact::Core.Co…
+     1         0 …piler/ssair/passes.jl   205 simple_walk(compact::Core.Compile…
+     1         0 …piler/ssair/passes.jl   237 simple_walk_constraint
+     5         0 …piler/ssair/passes.jl   941 sroa_pass!(ir::Core.Compiler.IRCo…
+     2         0 …piler/ssair/passes.jl   947 sroa_pass!(ir::Core.Compiler.IRCo…
+     1         0 …piler/ssair/passes.jl   952 sroa_pass!(ir::Core.Compiler.IRCo…
+     3         0 …piler/ssair/passes.jl   958 sroa_pass!(ir::Core.Compiler.IRCo…
+     1         0 …piler/ssair/passes.jl   966 sroa_pass!(ir::Core.Compiler.IRCo…
+     1         0 …piler/ssair/passes.jl   990 sroa_pass!(ir::Core.Compiler.IRCo…
+     2         0 …piler/ssair/passes.jl  1030 sroa_pass!(ir::Core.Compiler.IRCo…
+     1         0 …piler/ssair/passes.jl  1032 sroa_pass!(ir::Core.Compiler.IRCo…
+     4         0 …piler/ssair/passes.jl  1035 sroa_pass!(ir::Core.Compiler.IRCo…
+     1         0 …piler/ssair/passes.jl  1037 sroa_pass!(ir::Core.Compiler.IRCo…
+     1         0 …piler/ssair/passes.jl  1068 sroa_pass!(ir::Core.Compiler.IRCo…
+     1         0 …piler/ssair/passes.jl  1097 sroa_pass!(ir::Core.Compiler.IRCo…
+     3         0 …piler/ssair/passes.jl  1100 sroa_pass!(ir::Core.Compiler.IRCo…
+     3         0 …piler/ssair/passes.jl  1103 sroa_pass!(ir::Core.Compiler.IRCo…
+     7         0 …piler/ssair/passes.jl  1113 sroa_pass!(ir::Core.Compiler.IRCo…
+     9         0 …piler/ssair/passes.jl  1142 sroa_pass!(ir::Core.Compiler.IRCo…
+     1         0 …piler/ssair/passes.jl  1144 sroa_pass!(ir::Core.Compiler.IRCo…
+     1         0 …piler/ssair/passes.jl  1159 sroa_pass!(ir::Core.Compiler.IRCo…
+     1         1 …piler/ssair/passes.jl    63 try_compute_field
+     1         0 …piler/ssair/passes.jl    68 try_compute_fieldidx_stmt
+     1         0 …piler/ssair/passes.jl   255 walk_to_defs(compact::Core.Compil…
+     1         0 …piler/ssair/passes.jl   259 walk_to_defs(compact::Core.Compil…
+     1         0 …piler/ssair/passes.jl   270 walk_to_defs(compact::Core.Compil…
+     1         1 …ler/ssair/slot2ssa.jl    12 SlotInfo
+     3         0 …ler/ssair/slot2ssa.jl    16 SlotInfo
+     6         0 …ler/ssair/slot2ssa.jl   532 compute_live_ins
+     1         0 …ler/ssair/slot2ssa.jl   547 compute_live_ins(cfg::Core.Compil…
+     3         0 …ler/ssair/slot2ssa.jl   557 compute_live_ins(cfg::Core.Compil…
+     1         0 …ler/ssair/slot2ssa.jl   558 compute_live_ins(cfg::Core.Compil…
+     1         0 …ler/ssair/slot2ssa.jl   563 compute_live_ins(cfg::Core.Compil…
+     1         1 …ler/ssair/slot2ssa.jl     ? construct_ssa!(ci::Core.CodeInfo,…
+     1         0 …ler/ssair/slot2ssa.jl   632 construct_ssa!(ci::Core.CodeInfo,…
+     2         0 …ler/ssair/slot2ssa.jl   633 construct_ssa!(ci::Core.CodeInfo,…
+     6         0 …ler/ssair/slot2ssa.jl   663 construct_ssa!(ci::Core.CodeInfo,…
+     4         0 …ler/ssair/slot2ssa.jl   689 construct_ssa!(ci::Core.CodeInfo,…
+     1         1 …ler/ssair/slot2ssa.jl   727 construct_ssa!(ci::Core.CodeInfo,…
+     1         0 …ler/ssair/slot2ssa.jl   787 construct_ssa!(ci::Core.CodeInfo,…
+    11         0 …ler/ssair/slot2ssa.jl   808 construct_ssa!(ci::Core.CodeInfo,…
+     4         0 …ler/ssair/slot2ssa.jl   856 construct_ssa!(ci::Core.CodeInfo,…
+     2         0 …ler/ssair/slot2ssa.jl   860 construct_ssa!(ci::Core.CodeInfo,…
+     1         0 …ler/ssair/slot2ssa.jl   905 construct_ssa!(ci::Core.CodeInfo,…
+    11         0 …ler/ssair/slot2ssa.jl   958 construct_ssa!(ci::Core.CodeInfo,…
+    36         0 …ler/ssair/slot2ssa.jl   965 construct_ssa!(ci::Core.CodeInfo,…
+     1         1 …ler/ssair/slot2ssa.jl   391 domsort_ssa!(ir::Core.Compiler.IR…
+     1         0 …ler/ssair/slot2ssa.jl   394 domsort_ssa!(ir::Core.Compiler.IR…
+     1         0 …ler/ssair/slot2ssa.jl   400 domsort_ssa!(ir::Core.Compiler.IR…
+     1         0 …ler/ssair/slot2ssa.jl   435 domsort_ssa!(ir::Core.Compiler.IR…
+     2         0 …ler/ssair/slot2ssa.jl   438 domsort_ssa!(ir::Core.Compiler.IR…
+     1         0 …ler/ssair/slot2ssa.jl   464 domsort_ssa!(ir::Core.Compiler.IR…
+     1         1 …ler/ssair/slot2ssa.jl   466 domsort_ssa!(ir::Core.Compiler.IR…
+     3         0 …ler/ssair/slot2ssa.jl   506 domsort_ssa!(ir::Core.Compiler.IR…
+     2         0 …ler/ssair/slot2ssa.jl   512 domsort_ssa!(ir::Core.Compiler.IR…
+    24         0 …ler/ssair/slot2ssa.jl   515 domsort_ssa!(ir::Core.Compiler.IR…
+     1         1 …ler/ssair/slot2ssa.jl     ? fixemup!(slot_filter::Core.Compil…
+     3         1 …ler/ssair/slot2ssa.jl   116 fixemup!(slot_filter::Core.Compil…
+     1         0 …ler/ssair/slot2ssa.jl   128 fixemup!(slot_filter::Core.Compil…
+     1         0 …ler/ssair/slot2ssa.jl   151 fixemup!(slot_filter::Core.Compil…
+     3         2 …ler/ssair/slot2ssa.jl   160 fixemup!(slot_filter::Core.Compil…
+     2         0 …ler/ssair/slot2ssa.jl   170 fixemup!(slot_filter::Core.Compil…
+     1         0 …ler/ssair/slot2ssa.jl   172 fixemup!(slot_filter::Core.Compil…
+     1         1 …ler/ssair/slot2ssa.jl     ? iterate(::Core.Compiler.Iterators…
+     1         0 …ler/ssair/slot2ssa.jl   291 iterated_dominance_frontier(cfg::…
+     1         0 …ler/ssair/slot2ssa.jl   296 iterated_dominance_frontier(cfg::…
+     1         0 …ler/ssair/slot2ssa.jl   313 iterated_dominance_frontier(cfg::…
+     1         0 …ler/ssair/slot2ssa.jl    83 new_to_regular(stmt::Any, new_off…
+     1         0 …ler/ssair/slot2ssa.jl    88 new_to_regular(stmt::Any, new_off…
+     1         1 …ler/ssair/slot2ssa.jl    89 new_to_regular(stmt::Any, new_off…
+    11         0 …ler/ssair/slot2ssa.jl   183 rename_uses!
+     1         1 …ler/ssair/slot2ssa.jl    58 renumber_ssa(stmt::Core.SSAValue,…
+     6         0 …ler/ssair/slot2ssa.jl    69 renumber_ssa!
+     8         0 …ler/ssair/slot2ssa.jl    70 renumber_ssa!
+     1         0 …ler/ssair/slot2ssa.jl    36 scan_entry!(result::Vector{Core.C…
+     2         0 …ler/ssair/slot2ssa.jl    41 scan_entry!(result::Vector{Core.C…
+     5         0 …ler/ssair/slot2ssa.jl    46 scan_slot_def_use(nargs::Int64, c…
+     1         0 …ler/ssair/slot2ssa.jl    48 scan_slot_def_use(nargs::Int64, c…
+     1         0 …ler/ssair/slot2ssa.jl    52 scan_slot_def_use(nargs::Int64, c…
+     3         0 …ler/ssair/slot2ssa.jl    53 scan_slot_def_use(nargs::Int64, c…
+     1         1 …ler/ssair/slot2ssa.jl   233 typ_for_val(x::Any, ci::Core.Code…
+     4         4 …se/compiler/tfuncs.jl  1564 _fieldtype_tfunc(𝕃::Core.Compiler…
+     1         0 …se/compiler/tfuncs.jl  1576 _fieldtype_tfunc(𝕃::Core.Compiler…
+     1         1 …se/compiler/tfuncs.jl  1607 _fieldtype_tfunc(𝕃::Core.Compiler…
+     1         0 …se/compiler/tfuncs.jl  1092 _getfield_tfunc(𝕃::Core.Compiler.…
+     1         0 …se/compiler/tfuncs.jl  1099 _getfield_tfunc
+     1         0 …se/compiler/tfuncs.jl  1118 _getfield_tfunc
+     1         0 …se/compiler/tfuncs.jl  1138 _getfield_tfunc(𝕃::Core.Compiler.…
+     1         0 …se/compiler/tfuncs.jl  1218 _getfield_tfunc(𝕃::Core.Compiler.…
+     1         0 …se/compiler/tfuncs.jl  1808 apply_type_tfunc(::Core.Compiler.…
+     4         4 …se/compiler/tfuncs.jl  1860 apply_type_tfunc(::Core.Compiler.…
+     6         0 …se/compiler/tfuncs.jl  2383 builtin_effects(𝕃::Core.Compiler.…
+     1         0 …se/compiler/tfuncs.jl  2407 builtin_effects(𝕃::Core.Compiler.…
+     1         0 …se/compiler/tfuncs.jl  2451 builtin_tfunction(interp::Core.Co…
+     1         0 …se/compiler/tfuncs.jl  2476 builtin_tfunction(interp::Core.Co…
+    24         6 …se/compiler/tfuncs.jl  2480 builtin_tfunction(interp::Core.Co…
+     1         0 …se/compiler/tfuncs.jl   317 egal_tfunc(𝕃::Core.Compiler.Infer…
+     1         0 …se/compiler/tfuncs.jl   317 egal_tfunc
+     1         0 …se/compiler/tfuncs.jl   337 egal_tfunc
+     1         0 …se/compiler/tfuncs.jl   346 egal_tfunc
+     1         0 …se/compiler/tfuncs.jl   349 egal_tfunc(::Core.Compiler.JLType…
+     2         0 …se/compiler/tfuncs.jl  1509 fieldtype_tfunc(𝕃::Core.Compiler.…
+     6         0 …se/compiler/tfuncs.jl  1511 fieldtype_tfunc(𝕃::Core.Compiler.…
+     1         0 …se/compiler/tfuncs.jl    63 find_tfunc
+     1         1 …se/compiler/tfuncs.jl     ? getfield_boundscheck(::Core.Compi…
+     3         0 …se/compiler/tfuncs.jl  2328 getfield_effects(𝕃::Core.Compiler…
+     1         0 …se/compiler/tfuncs.jl  2331 getfield_effects(𝕃::Core.Compiler…
+     2         0 …se/compiler/tfuncs.jl  2332 getfield_effects(𝕃::Core.Compiler…
+     2         0 …se/compiler/tfuncs.jl   975 getfield_nothrow(𝕃::Core.Compiler…
+     1         1 …se/compiler/tfuncs.jl  1011 getfield_nothrow(𝕃::Core.Compiler…
+     1         0 …se/compiler/tfuncs.jl  1033 getfield_nothrow(𝕃::Core.Compiler…
+     1         1 …se/compiler/tfuncs.jl  1252 getfield_notundefined(typ0::Any, …
+     1         1 …se/compiler/tfuncs.jl  1288 getfield_notundefined(typ0::Any, …
+     1         0 …se/compiler/tfuncs.jl  1044 getfield_tfunc(𝕃::Core.Compiler.I…
+     1         0 …se/compiler/tfuncs.jl  1058 getfield_tfunc(𝕃::Core.Compiler.I…
+     4         1 …se/compiler/tfuncs.jl    99 instanceof_tfunc(t::Any)
+     1         1 …se/compiler/tfuncs.jl   101 instanceof_tfunc(t::Any, troot::C…
+     2         0 …se/compiler/tfuncs.jl   109 instanceof_tfunc(t::Any, troot::T…
+     1         0 …se/compiler/tfuncs.jl   122 instanceof_tfunc(t::Any, troot::T…
+     1         0 …se/compiler/tfuncs.jl   818 isa_tfunc(𝕃::Core.Compiler.Infere…
+    55         0 …se/compiler/tfuncs.jl  2651 return_type_tfunc(interp::Core.Co…
+     1         0 …se/compiler/tfuncs.jl  1907 tuple_tfunc(𝕃::Core.Compiler.Infe…
+     1         1 …se/compiler/tfuncs.jl  1933 tuple_tfunc(𝕃::Core.Compiler.Infe…
+     1         1 …se/compiler/tfuncs.jl  1964 tuple_tfunc(𝕃::Core.Compiler.Infe…
+     1         0 …se/compiler/tfuncs.jl   802 typeassert_tfunc(𝕃::Core.Compiler…
+     1         0 …compiler/typeinfer.jl   336 Core.CodeInstance(interp::Core.Co…
+  1477         0 …compiler/typeinfer.jl   247 _typeinf(interp::Core.Compiler.Na…
+     9         0 …compiler/typeinfer.jl   260 _typeinf(interp::Core.Compiler.Na…
+     1         0 …compiler/typeinfer.jl   263 _typeinf(interp::Core.Compiler.Na…
+   838         0 …compiler/typeinfer.jl   272 _typeinf(interp::Core.Compiler.Na…
+    36         0 …compiler/typeinfer.jl   280 _typeinf(interp::Core.Compiler.Na…
+    69         0 …compiler/typeinfer.jl   283 _typeinf(interp::Core.Compiler.Na…
+     2         0 …compiler/typeinfer.jl   285 _typeinf(interp::Core.Compiler.Na…
+     1         1 …compiler/typeinfer.jl   507 adjust_effects(sv::Core.Compiler.…
+     1         1 …compiler/typeinfer.jl   658 annotate_slot_load!(interp::Core.…
+     1         0 …compiler/typeinfer.jl   662 annotate_slot_load!(interp::Core.…
+    67         0 …compiler/typeinfer.jl   405 cache_result!(interp::Core.Compil…
+     2         0 …compiler/typeinfer.jl   406 cache_result!(interp::Core.Compil…
+     1         0 …compiler/typeinfer.jl   516 finish(me::Core.Compiler.Inferenc…
+     1         0 …compiler/typeinfer.jl   521 finish(me::Core.Compiler.Inferenc…
+     6         0 …compiler/typeinfer.jl   559 finish(me::Core.Compiler.Inferenc…
+     1         0 …compiler/typeinfer.jl   568 finish(me::Core.Compiler.Inferenc…
+     2         0 …compiler/typeinfer.jl   228 finish!
+    57        57 …compiler/typeinfer.jl   360 maybe_compress_codeinfo(interp::C…
+     1         1 …compiler/typeinfer.jl   607 record_slot_assign!(sv::Core.Comp…
+     1         0 …compiler/typeinfer.jl   610 record_slot_assign!(sv::Core.Comp…
+    36         0 …compiler/typeinfer.jl   576 store_backedges
+    34        34 …compiler/typeinfer.jl   583 store_backedges(caller::Core.Meth…
+     2         2 …compiler/typeinfer.jl   586 store_backedges(caller::Core.Meth…
+    10         0 …compiler/typeinfer.jl   374 transform_result_for_cache
+    57         0 …compiler/typeinfer.jl   379 transform_result_for_cache
+     2         0 …compiler/typeinfer.jl   699 type_annotate!(interp::Core.Compi…
+     1         0 …compiler/typeinfer.jl   715 type_annotate!(interp::Core.Compi…
+     1         1 …compiler/typeinfer.jl   730 type_annotate!(interp::Core.Compi…
+     2         0 …compiler/typeinfer.jl   741 type_annotate!(interp::Core.Compi…
+  1480         0 …compiler/typeinfer.jl   216 typeinf(interp::Core.Compiler.Nat…
+     9         0 …compiler/typeinfer.jl   871 typeinf_edge(interp::Core.Compile…
+     2         0 …compiler/typeinfer.jl   872 typeinf_edge(interp::Core.Compile…
+     5         0 …compiler/typeinfer.jl   919 typeinf_edge(interp::Core.Compile…
+   200         0 …compiler/typeinfer.jl   920 typeinf_edge(interp::Core.Compile…
+  1473         0 …compiler/typeinfer.jl   930 typeinf_edge(interp::Core.Compile…
+     1         0 …compiler/typeinfer.jl  1049 typeinf_ext(interp::Core.Compiler…
+  1480         0 …compiler/typeinfer.jl  1051 typeinf_ext(interp::Core.Compiler…
+  1480         0 …compiler/typeinfer.jl  1078 typeinf_ext_toplevel(mi::Core.Met…
+  1480         0 …compiler/typeinfer.jl  1082 typeinf_ext_toplevel(interp::Core…
+     1         0 …mpiler/typelattice.jl   302 is_lattice_bool
+     1         1 …mpiler/typelattice.jl     ? is_lattice_equal(lattice::Core.Co…
+     3         0 …mpiler/typelattice.jl   542 is_lattice_equal
+     2         0 …mpiler/typelattice.jl   551 is_lattice_equal(lattice::Core.Co…
+     1         1 …mpiler/typelattice.jl   554 is_lattice_equal(lattice::Core.Co…
+     1         1 …mpiler/typelattice.jl   558 is_lattice_equal(lattice::Core.Co…
+     1         0 …mpiler/typelattice.jl   291 issubconditional(lattice::Core.Co…
+     1         1 …mpiler/typelattice.jl   306 maybe_extract_const_bool
+     1         0 …mpiler/typelattice.jl   710 smerge
+     1         0 …mpiler/typelattice.jl   782 stoverwrite!
+     1         1 …mpiler/typelattice.jl   783 stoverwrite!
+     1         0 …mpiler/typelattice.jl   755 stupdate!(lattice::Core.Compiler.…
+     1         0 …mpiler/typelattice.jl   637 tmeet(lattice::Core.Compiler.Part…
+     1         0 …mpiler/typelattice.jl   647 tmeet(lattice::Core.Compiler.Cons…
+     1         0 …mpiler/typelattice.jl   657 tmeet
+     1         1 …mpiler/typelattice.jl   667 tmeet(lattice::Core.Compiler.Infe…
+     1         1 …mpiler/typelattice.jl   669 tmeet(lattice::Core.Compiler.Infe…
+     1         0 …mpiler/typelattice.jl   670 tmeet(lattice::Core.Compiler.Infe…
+     3         3 …mpiler/typelattice.jl   693 widenconst
+     3         3 …mpiler/typelattice.jl   693 widenconst(c::Core.Const)
+     1         1 …mpiler/typelattice.jl   697 widenconst(t::Type)
+     1         1 …mpiler/typelattice.jl   248 widenslotwrapper
+     1         1 …mpiler/typelattice.jl   250 widenslotwrapper
+     2         0 …mpiler/typelattice.jl   397 ⊑(lattice::Core.Compiler.Inferenc…
+     1         0 …mpiler/typelattice.jl   424 ⊑
+     1         0 …mpiler/typelattice.jl   432 ⊑
+     1         1 …mpiler/typelattice.jl   448 ⊑(lattice::Core.Compiler.Partials…
+     1         1 …mpiler/typelattice.jl   451 ⊑(lattice::Core.Compiler.Partials…
+     1         1 …mpiler/typelattice.jl   498 ⊑(lattice::Core.Compiler.Partials…
+     3         1 …mpiler/typelattice.jl   508 ⊑(lattice::Core.Compiler.Partials…
+     2         0 …mpiler/typelattice.jl   530 ⊑(lattice::Core.Compiler.ConstsLa…
+     1         1 …ompiler/typelimits.jl     ? abstract_call_gf_by_type(interp::…
+     1         0 …ompiler/typelimits.jl   295 issimpleenoughtype(t::Any)
+     1         0 …ompiler/typelimits.jl   323 issimplertype(𝕃::Core.Compiler.Pa…
+     1         1 …ompiler/typelimits.jl   448 tmerge(lattice::Core.Compiler.Inf…
+     1         1 …ompiler/typelimits.jl   449 tmerge
+     5         0 …ompiler/typelimits.jl   453 tmerge(lattice::Core.Compiler.Inf…
+     3         0 …ompiler/typelimits.jl   453 tmerge
+     1         0 …ompiler/typelimits.jl   474 tmerge(lattice::Core.Compiler.Con…
+     4         0 …ompiler/typelimits.jl   493 tmerge(lattice::Core.Compiler.Con…
+     3         0 …ompiler/typelimits.jl   533 tmerge
+     1         1 …ompiler/typelimits.jl   608 tmerge(lattice::Core.Compiler.Par…
+     6         0 …ompiler/typelimits.jl   609 tmerge(lattice::Core.Compiler.Par…
+     1         0 …ompiler/typelimits.jl   651 tmerge(lattice::Core.Compiler.Par…
+     1         0 …ompiler/typelimits.jl   663 tmerge(lattice::Core.Compiler.Con…
+     1         0 …ompiler/typelimits.jl   679 tmerge(::Core.Compiler.JLTypeLatt…
+     1         1 …ompiler/typelimits.jl     ? tmerge_fast_path(lattice::Core.Co…
+     1         1 …ompiler/typelimits.jl   364 tmerge_fast_path(lattice::Core.Co…
+     2         0 …ompiler/typelimits.jl   366 tmerge_fast_path(lattice::Core.Co…
+     1         0 …ompiler/typelimits.jl   367 tmerge_fast_path(lattice::Core.Co…
+     1         0 …ompiler/typelimits.jl   368 tmerge_fast_path(lattice::Core.Co…
+     1         0 …ompiler/typelimits.jl   722 tmerge_types_slow(typea::Type, ty…
+     1         1 …ompiler/typelimits.jl   847 tuplemerge(a::DataType, b::DataTy…
+     5         0 …ase/compiler/types.jl    88 InferenceResult
+     4         0 …ase/compiler/types.jl    90 InferenceResult
+     1         1 …ase/compiler/types.jl   504 getresult(info::Core.Compiler.Cal…
+     1         1 …ase/compiler/types.jl   503 getsplit(info::Core.Compiler.Call…
+     2         2 …ase/compiler/types.jl   502 nsplit(info::Core.Compiler.CallIn…
+     7         4 …compiler/typeutils.jl    57 (::Core.Compiler.var"#355#356")(a…
+     1         1 …compiler/typeutils.jl   292 _unioncomplexity(x::Any)
+    24        13 …compiler/typeutils.jl    57 argtypes_to_type
+     1         0 …compiler/typeutils.jl    82 datatype_min_ninitialized(t::Data…
+     4         0 …compiler/typeutils.jl   200 hasintersect
+     3         0 …compiler/typeutils.jl   393 is_mutation_free_argtype
+     1         0 …compiler/typeutils.jl     9 isconstType
+     1         0 …compiler/typeutils.jl   291 unioncomplexity
+     4         4 …compiler/utilities.jl   222 #specialize_method#289
+    10        10 …compiler/utilities.jl   224 #specialize_method#289
+     4         0 …compiler/utilities.jl   228 specialize_method(match::Core.Met…
+     1         0 …compiler/utilities.jl   228 #specialize_method#290
+     1         0 …compiler/utilities.jl    17 _any
+     1         0 …compiler/utilities.jl    22 any
+    10         1 …compiler/utilities.jl    43 anymap(f::Core.Compiler.var"#355#…
+     1         0 …compiler/utilities.jl    43 anymap
+     1         1 …compiler/utilities.jl    36 contains_is
+    30         0 …compiler/utilities.jl   387 find_ssavalue_uses(body::Vector{A…
+     2         0 …compiler/utilities.jl   399 find_ssavalue_uses(body::Vector{A…
+     2         2 …compiler/utilities.jl   407 find_ssavalue_uses(e::Expr, uses:…
+     1         0 …compiler/utilities.jl   415 find_ssavalue_uses(e::Expr, uses:…
+     2         0 …compiler/utilities.jl   462 find_throw_blocks(code::Vector{An…
+     7         7 …compiler/utilities.jl   159 get_compileable_sig
+   148        15 …compiler/utilities.jl   123 get_staged(mi::Core.MethodInstanc…
+     1         1 …compiler/utilities.jl   110 is_nospecializeinfer
+     3         3 …compiler/utilities.jl    70 is_self_quoting
+     2         0 …compiler/utilities.jl   434 is_throw_call
+     1         1 …compiler/utilities.jl    55 istopfunction
+     2         0 …compiler/utilities.jl   444 mark_throw_blocks!(src::Core.Code…
+     3         0 …compiler/utilities.jl    75 quoted
+   148         0 …compiler/utilities.jl   135 retrieve_code_info
+    17        17 …compiler/utilities.jl   143 retrieve_code_info
+    14         0 …compiler/utilities.jl   212 specialize_method
+     5         0 …compiler/utilities.jl   227 specialize_method
+     3         0 …compiler/utilities.jl   357 ssamap(f::Core.Compiler.var"#413#…
+     2         0 …compiler/utilities.jl   358 ssamap(f::Core.Compiler.var"#413#…
+     1         0 …compiler/utilities.jl   360 ssamap(f::Core.Compiler.var"#413#…
+     1         0 …compiler/utilities.jl   362 ssamap(f::Core.Compiler.var"#413#…
+   201        38 @Base/coreio.jl            4 println(::String, ::Tuple{Int64, …
+     1         1 @Base/dict.jl            262 ht_keyindex(h::Dict{Float64, Int3…
+     1         1 @Base/error.jl            35 error(s::String)
+     9         0 @Base/essentials.jl        ? #6
+     1         1 @Base/essentials.jl        ? _useref_setindex!(stmt::Any, op::…
+     1         1 @Base/essentials.jl        ? basic_blocks_starts
+     1         1 @Base/essentials.jl        ? fixemup!(slot_filter::Core.Compil…
+   218       218 @Base/essentials.jl       13 getindex
+  2243      2243 @Base/essentials.jl       14 getindex
+     1         1 @Base/essentials.jl      769 getindex
+     5         0 @Base/essentials.jl      957 isempty
+     1         1 @Base/essentials.jl      420 isvarargtype
+     5         5 @Base/essentials.jl       10 length
+    15        15 @Base/essentials.jl      650 setindex!
+     1         1 @Base/essentials.jl        ? ssa_substitute_op!(insert_node!::…
+     1         1 @Base/essentials.jl        ? typeinf_local(interp::Core.Compil…
+    70         0 @Base/expr.jl             41 copy(e::Expr)
+     6         0 @Base/expr.jl             75 copy(c::Core.CodeInfo)
+     1         0 @Base/expr.jl             76 copy(c::Core.CodeInfo)
+     1         0 @Base/expr.jl             83 copy(c::Core.CodeInfo)
+    72         2 @Base/expr.jl             68 copy_exprargs(x::Vector{Any})
+     2         2 @Base/expr.jl             44 copy_exprs(x::Any)
+    71         1 @Base/expr.jl             46 copy_exprs(x::Any)
+    65        65 @Base/expr.jl             70 exprarray
+     1         1 @Base/expr.jl             38 isexpr
+   341       341 @Base/float.jl           535 !=
+   575       575 @Base/float.jl           411 *
+  2857      2857 @Base/float.jl           409 +
+   488       488 @Base/float.jl           410 -
+   153       153 @Base/float.jl           610 abs
+   147         0 @Base/generator.jl         ? #6
+     2         0 @Base/generator.jl        44 iterate
+  3069         0 @Base/generator.jl        47 iterate
+     3         0 @Base/iddict.jl           30 IdDict
+     4         4 @Base/iddict.jl          146 _oidd_nextind
+    23        23 @Base/iddict.jl          102 get
+     1         1 @Base/iddict.jl          107 getindex
+    23         0 @Base/iddict.jl          192 in
+     5         0 @Base/iddict.jl          149 iterate
+     1         0 @Base/iddict.jl          150 iterate
+     1         1 @Base/iddict.jl           96 setindex!(d::Core.Compiler.IdDict…
+     1         0 @Base/idset.jl             7 IdSet
+    21         0 @Base/idset.jl            20 in
+     5         0 @Base/idset.jl            18 isempty
+    43         0 @Base/indices.jl         393 iterate
+    15        15 @Base/int.jl              87 +
+     6         6 @Base/int.jl              86 -
+     6         0 @Base/int.jl            1068 -
+     2         2 @Base/int.jl              83 <
+    65        65 @Base/int.jl             513 <
+    36         0 @Base/int.jl             520 <
+     2         2 @Base/int.jl               ? process_node!(compact::Core.Compi…
+     1         1 @Base/int.jl               ? searchsortedfirst
+     1         0 @Base/io.jl              431 unsafe_write
+     1         0 @Base/io.jl              698 unsafe_write
+     1         0 @Base/io.jl              721 write
+     2         2 @Base/iterators.jl      1068 (::Base.Iterators.var"#12#14"{Tup…
+     1         1 @Base/iterators.jl      1075 (::Base.Iterators.var"#16#17"{Tup…
+   361         0 @Base/iterators.jl      1110 _piterate1
+     1         0 @Base/iterators.jl       516 iterate(::Core.Compiler.Iterators…
+   361         0 @Base/iterators.jl      1123 iterate
+     1         1 @Base/libuv.jl            48 iolock_begin
+215221         0 @Base/loading.jl        2136 _include(mapexpr::Function, mod::…
+215221         0 @Base/loading.jl        2076 include_string(mapexpr::typeof(id…
+  3311         0 …e/multidimensional.jl   889 _getindex
+    25         0 …e/multidimensional.jl   901 _unsafe_getindex
+  1832         0 …e/multidimensional.jl   901 _unsafe_getindex(::IndexLinear, :…
+    56         0 …e/multidimensional.jl   903 _unsafe_getindex
+  1398         0 …e/multidimensional.jl   903 _unsafe_getindex(::IndexLinear, :…
+  1454         0 …e/multidimensional.jl   912 _unsafe_getindex!
+  1621         0 …e/multidimensional.jl   696 getindex
+    27        27 …e/multidimensional.jl     ? macro expansion
+     2         2 …e/multidimensional.jl   915 macro expansion
+  1051         0 …e/multidimensional.jl   917 macro expansion
+   263         0 …e/multidimensional.jl   918 macro expansion
+  7468         0 …e/multidimensional.jl   698 setindex!
+     2         0 none                       ? #19
+  2913         0 none                       ? (::Main.MKL.var"#23#24"{Vector{In…
+   479         0 none                       ? #8
+   107         0 none                       ? var"#s368#152"(N::Any, ::Any, op:…
+    21         0 @Base/number.jl            7 convert
+   103         0 @Base/operators.jl       587 *
+     1         0 @Base/operators.jl       378 >
+   101         0 @Base/operators.jl       545 afoldl
+     1         1 @Base/ordering.jl        161 ord(lt::Function, by::Function, r…
+     1         1 @Base/pointer.jl          65 unsafe_convert
+   862       862 @Base/promotion.jl       521 ==
+     5         0 @Base/range.jl          1385 Array
+     5         0 @Base/range.jl          1393 collect
+     1         1 @Base/range.jl             ? compute_inlining_cases(info::Core…
+     1         0 @Base/range.jl           672 isempty
+    84        83 @Base/range.jl           897 iterate
+   885        29 @Base/range.jl           901 iterate
+   965         0 @Base/reduce.jl          175 #mapfoldl#298
+   965         0 @Base/reduce.jl          307 #mapreduce#302
+   965         0 @Base/reduce.jl          535 #sum#305
+   965         0 @Base/reduce.jl          564 #sum#306
+   119         0 @Base/reduce.jl           86 BottomRF
+   600         0 @Base/reduce.jl          100 MappingRF
+     4         0 @Base/reduce.jl           60 _foldl_impl
+   361         0 @Base/reduce.jl           60 _foldl_impl(op::Base.MappingRF{Ma…
+     2         0 @Base/reduce.jl           62 _foldl_impl
+   598         0 @Base/reduce.jl           62 _foldl_impl(op::Base.MappingRF{Ma…
+     4         0 @Base/reduce.jl          447 _mapreduce
+   122         0 @Base/reduce.jl           27 add_sum
+     6         5 @Base/reduce.jl         1305 all(f::Function, itr::Tuple{DataT…
+     6         0 @Base/reduce.jl           48 foldl_impl
+   959         0 @Base/reduce.jl           48 foldl_impl(op::Base.MappingRF{Mai…
+     3         0 @Base/reduce.jl          265 macro expansion
+   965         0 @Base/reduce.jl          175 mapfoldl
+   965         0 @Base/reduce.jl           44 mapfoldl_impl
+   965         0 @Base/reduce.jl          307 mapreduce
+     4         0 @Base/reduce.jl          263 mapreduce_impl(f::typeof(identity…
+     1         0 @Base/reduce.jl          271 mapreduce_impl(f::typeof(identity…
+     4         0 @Base/reduce.jl          272 mapreduce_impl(f::typeof(identity…
+     4         0 @Base/reduce.jl          277 mapreduce_impl
+   965         0 @Base/reduce.jl          535 sum
+   965         0 @Base/reduce.jl          564 sum
+     4         0 @Base/reducedim.jl      1014 #_sum#830
+     4         0 @Base/reducedim.jl      1015 #_sum#831
+     4         0 @Base/reducedim.jl       357 #mapreduce#821
+     4         0 @Base/reducedim.jl      1010 #sum#828
+     4         0 @Base/reducedim.jl       365 _mapreduce_dim
+     4         0 @Base/reducedim.jl      1014 _sum
+     4         0 @Base/reducedim.jl      1015 _sum
+     4         0 @Base/reducedim.jl       357 mapreduce
+     4         0 @Base/reducedim.jl      1010 sum
+    88        88 @Base/reflection.jl     1031 _methods_by_ftype(t::Any, mt::Not…
+     1         1 @Base/reflection.jl      670 has_free_typevars
+     1         1 @Base/reflection.jl      247 isconst
+     6         6 @Base/reflection.jl      749 typeintersect
+     1         1 @Base/refvalue.jl         59 getindex
+     1         0 @Base/ryu/Ryu.jl         113 show
+     1         0 @Base/ryu/Ryu.jl         118 show(io::IOContext{Base.TTY}, x::…
+     1         0 @Base/show.jl           1396 show
+     1         0 @Base/show.jl           1335 show_delim_array
+     1         0 @Base/show.jl           1346 show_delim_array(io::Base.TTY, it…
+     1         0 @Base/show.jl           1363 show_delim_array
+     3         2 @Base/simdloop.jl         75 macro expansion
+ 11466         0 @Base/simdloop.jl         77 macro expansion
+    14         0 @Base/simdloop.jl         78 macro expansion
+     1         1 @Base/simdloop.jl         84 macro expansion
+   137       136 @Base/sort.jl           1583 partialsortperm!(ix::Vector{Int64…
+   137         0 @Base/sort.jl           1524 #partialsortperm#30
+   137         0 @Base/sort.jl           1524 partialsortperm
+   137         0 @Base/sort.jl           1567 partialsortperm!
+     1         0 @Base/stream.jl         1105 unsafe_write(s::Base.TTY, p::Ptr{…
+     1         0 @Base/stream.jl         1120 unsafe_write(s::Base.TTY, p::Ptr{…
+     1         0 @Base/stream.jl         1048 uv_write(s::Base.TTY, p::Ptr{UInt…
+     1         1 @Base/stream.jl         1147 write(s::Base.TTY, b::UInt8)
+     2         0 @Base/strings/io.jl       35 print(io::Base.TTY, x::Vector{Flo…
+   117        98 @Base/strings/io.jl       46 print(::Base.TTY, ::String, ::Vec…
+     1         0 @Base/strings/io.jl      250 print(io::Base.TTY, s::String)
+   156        35 @Base/strings/io.jl       75 println(::Base.TTY, ::String, ::V…
+     1         0 @Base/strings/io.jl      248 write
+    28         0 @Base/subarray.jl        328 setindex!
+   350         0 @Base/subarray.jl        329 setindex!
+   752         0 @Base/subarray.jl        347 setindex!
+     1         1 @Base/task.jl            575 (::Base.var"#671#672"{Task})()
+     1         1 @Base/task.jl            985 poptask(W::Base.IntrusiveLinkedLi…
+     1         0 @Base/task.jl            994 wait()
+215221         0 @Base/timing.jl          279 macro expansion
+     1         1 @Base/tuple.jl           196 first(::Tuple{})
+     1         1 @Base/tuple.jl            31 getindex
+     2         0 @Base/tuple.jl           617 in
+     1         1 @Base/tuple.jl            95 indexed_iterate(I::Nothing, i::In…
+     1         1 @Base/tuple.jl             ? sym_in(x::Symbol, itr::NTuple{17,…
+     2         2 @Base/tuple.jl           613 sym_in(x::Symbol, itr::NTuple{17,…
+   156       156 …arAlgebra/src/blas.jl   667 gemv!(trans::Char, alpha::Float64…
+   530       152 …lgebra/src/generic.jl  1257 ishermitian(A::Matrix{Float64})
+    49         0 …lgebra/src/generic.jl  1260 ishermitian(A::Matrix{Float64})
+   579         0 …lgebra/src/generic.jl  1186 issymmetric
+   156         0 …Algebra/src/matmul.jl    53 *
+   156         0 …Algebra/src/matmul.jl    87 *
+   156         0 …Algebra/src/matmul.jl  1146 *(tu::LinearAlgebra.Adjoint{Float…
+   156         0 …Algebra/src/matmul.jl   415 gemv!(y::Vector{Float64}, tA::Cha…
+   156         0 …Algebra/src/matmul.jl    71 generic_matvecmul!
+   156         0 …Algebra/src/matmul.jl    66 mul!
+   156         0 …Algebra/src/matmul.jl   237 mul!
+     1         0 …ers/DenseAxisArray.jl   534 _broadcast_axes_check(x::Tuple{})
+    62        40 …utable_arithmetics.jl   261 #s368#152
+    21        14 …utable_arithmetics.jl   262 #s368#152
+    24        21 …utable_arithmetics.jl   268 #s368#152
+   579         0 @LIBSVM/src/LIBSVM.jl    344 svmtrain(X::Matrix{Float64}, y::V…
+     2         0 @LIBSVM/src/LIBSVM.jl    345 svmtrain(X::Matrix{Float64}, y::V…
+  1363         0 @LIBSVM/src/LIBSVM.jl    360 svmtrain(X::Matrix{Float64}, y::V…
+187455         0 @LIBSVM/src/LIBSVM.jl    372 svmtrain(X::Matrix{Float64}, y::V…
+   316         0 @LIBSVM/src/LIBSVM.jl    375 svmtrain(X::Matrix{Float64}, y::V…
+   316         0 @LIBSVM/src/LIBSVM.jl     73 LIBSVM.SVM(smc::LIBSVM.SVMModel, …
+   316         0 @LIBSVM/src/LIBSVM.jl     40 LIBSVM.SupportVectors(smc::LIBSVM…
+   579         0 @LIBSVM/src/LIBSVM.jl    216 check_train_input(X::Matrix{Float…
+     1         0 @LIBSVM/src/LIBSVM.jl    176 grp2idx(::Type{Float64}, labels::…
+     2         0 @LIBSVM/src/LIBSVM.jl    190 indices_and_weights
+189716         1 @LIBSVM/src/LIBSVM.jl    307 svmtrain
+    20         0 …VM/src/LibSVMtypes.jl     4 SVMNode
+187455    187455 …IBSVM/src/libcalls.jl    26 libsvm_train(problem::LIBSVM.SVMP…
+   752         0 @LIBSVM/src/nodes.jl      38 fill_ids!
+    42        42 @LIBSVM/src/nodes.jl       ? fill_nodes!(nodes::SubArray{LIBSV…
+   454         0 @LIBSVM/src/nodes.jl      27 fill_nodes!(nodes::SubArray{LIBSV…
+    93        93 @LIBSVM/src/nodes.jl      28 fill_nodes!(nodes::SubArray{LIBSV…
+     1         0 @LIBSVM/src/nodes.jl      29 fill_nodes!(nodes::SubArray{LIBSV…
+    21         0 @LIBSVM/src/nodes.jl      51 gram2nodes(X::Matrix{Float64})
+   752         0 @LIBSVM/src/nodes.jl      54 gram2nodes(X::Matrix{Float64})
+   590         0 @LIBSVM/src/nodes.jl      55 gram2nodes(X::Matrix{Float64})
+215221         0 …g/scripts/run_IMKL.jl    59 macro expansion
+209209      1581 …g/scripts/run_IMKL.jl    60 macro expansion
+    76        56 …g/scripts/run_IMKL.jl    68 macro expansion
+  4030       543 …g/scripts/run_IMKL.jl    71 macro expansion
+  1906         0 …g/scripts/run_IMKL.jl    72 macro expansion
+215221         0 …g/scripts/run_IMKL.jl   269 top-level scope
+   137         0 …rpretable_MKL/gssp.jl    75 GSSP(w::Vector{Float64}, k::Int64…
+   122         0 …rpretable_MKL/gssp.jl    82 GSSP(w::Vector{Float64}, k::Int64…
+   137         0 …rpretable_MKL/gssp.jl    19 PLk(w::Vector{Float64}, k::Int64)
+    83         0 …table_multi_kernel.jl    43 symmetrize!(K::Matrix{Float64}; t…
+   852         0 …table_multi_kernel.jl    45 symmetrize!(K::Matrix{Float64}; t…
+   120         0 …table_multi_kernel.jl    49 symmetrize!(K::Matrix{Float64}; t…
+   883         0 …table_multi_kernel.jl    60 symmetrize!(K::Matrix{Float64}; t…
+    68         0 …table_multi_kernel.jl    61 symmetrize!(K::Matrix{Float64}; t…
+    54         0 …table_multi_kernel.jl    62 symmetrize!(K::Matrix{Float64}; t…
+    44         0 …table_multi_kernel.jl    63 symmetrize!(K::Matrix{Float64}; t…
+  2496         0 …table_multi_kernel.jl   560 train_interpretable_mkl(X::Matrix…
+   232         0 …table_multi_kernel.jl   561 train_interpretable_mkl(X::Matrix…
+   187         0 …table_multi_kernel.jl   562 train_interpretable_mkl(X::Matrix…
+   415         0 …table_multi_kernel.jl   589 train_interpretable_mkl(X::Matrix…
+ 10104         0 …table_multi_kernel.jl   597 train_interpretable_mkl(X::Matrix…
+   938         0 …table_multi_kernel.jl   598 train_interpretable_mkl(X::Matrix…
+190692         0 …table_multi_kernel.jl   609 train_interpretable_mkl(X::Matrix…
+   959         0 …table_multi_kernel.jl   617 train_interpretable_mkl(X::Matrix…
+    21         0 …table_multi_kernel.jl   618 train_interpretable_mkl(X::Matrix…
+     1         0 …table_multi_kernel.jl   619 train_interpretable_mkl(X::Matrix…
+   320         0 …table_multi_kernel.jl   635 train_interpretable_mkl(X::Matrix…
+   959         0 …table_multi_kernel.jl   181 compute_objective(α::Vector{Float…
+   156         0 …table_multi_kernel.jl   161 sparse_optimize_beta_gssp(K_list:…
+   259         0 …table_multi_kernel.jl   165 sparse_optimize_beta_gssp(K_list:…
+  2104         0 …table_multi_kernel.jl    37 symmetrize!
+206365         0 …table_multi_kernel.jl   536 kwcall(::@NamedTuple{max_iter::In…
+    42         0 …table_multi_kernel.jl   499 train_svm_libsvm(K::Matrix{Float6…
+   934         0 …table_multi_kernel.jl   502 train_svm_libsvm(K::Matrix{Float6…
+189716         0 …table_multi_kernel.jl   507 train_svm_libsvm(K::Matrix{Float6…
+     6         0 …c/MKL/multi_kernel.jl   294 compute_bias(α::Vector{Float64}, …
+  2913         0 …c/MKL/multi_kernel.jl   362 predict_mkl(α::Vector{Float64}, y…
+  2148         0 …c/MKL/multi_kernel.jl   363 predict_mkl(α::Vector{Float64}, y…
+    15         0 …c/MKL/multi_kernel.jl   374 predict_mkl(α::Vector{Float64}, y…
+   140         0 …c/MKL/multi_kernel.jl   377 predict_mkl(α::Vector{Float64}, y…
+   139         0 …c/MKL/multi_kernel.jl    62 predict_svm(α::Vector{Float64}, y…
+     6         0 …c/MKL/multi_kernel.jl   288 kwcall(::@NamedTuple{tolerance::F…
+  1121         0 …c/MKL/multi_kernel.jl   213 compute_combined_kernel(K_list::V…
+ 13627         0 …c/MKL/multi_kernel.jl   223 compute_combined_kernel(K_list::V…
+  5216         0 …c/MKL/multi_kernel.jl   353 kwcall(::@NamedTuple{kernel_type:…
+   139         0 …c/MKL/multi_kernel.jl    18 predict_svm
+215221         0 …rofile/src/Profile.jl    27 macro expansion
+Total snapshots: 216240. Utilization: 100% across all threads and tasks. Use the `groupby` kwarg to break down by thread and/or task.
