@@ -300,7 +300,7 @@ for dataset in DATASETS
         k0=k0,
         sum_beta_val=sum_beta_val,
         solver_type=:LIBSVM,
-        beta_method=:proximal
+        beta_method=:gssp
     )
     b = compute_bias(α, y_train, K_combined, best_C_mkl)
 
