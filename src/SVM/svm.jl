@@ -12,7 +12,7 @@ module SVM
     Debugger,
     Revise
     # Function to compute the bias term b
-    function compute_bias(α, y, K, C; tolerance = 1e-5)
+    function compute_bias(α, y, K, C; tolerance = 1e-6)
         n = length(α)
         b_values = Float64[]  # Explicitly define the type of b_values
 
