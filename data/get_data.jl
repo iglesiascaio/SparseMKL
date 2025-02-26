@@ -392,6 +392,12 @@ function get_dataset(ds_name::Symbol; force_download::Bool=false, frac::Real=1.0
     return X_train, y_train, X_test, y_test
 end
 
+function get_dataset(ds_name::String; force_download::Bool=false, frac::Real=1.0, train_ratio::Real=0.8)
+    # convert ds_name from String to Symbol
+    # useful when usign the python call 
+    return get_dataset(Symbol(ds_name); force_download=force_download, frac=frac, train_ratio=train_ratio)
+end
+
 # ----------------------------------------------------------------------------
 # 5) Convenience Wrappers for IRIS and ADULT
 # ----------------------------------------------------------------------------
