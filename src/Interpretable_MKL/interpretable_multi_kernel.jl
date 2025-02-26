@@ -177,9 +177,9 @@ end
 
 Compute the SVM dual objective = sum(α) - 0.5 * Σᵢⱼ αᵢ αⱼ yᵢ yⱼ K[i,j].
 """
-function compute_objective(α, y, K, β)
+function compute_objective(α, y, K, β, λ)
     sum(α) - 0.5 * sum(y[i]*y[j]*α[i]*α[j]*K[i,j]
-                       for i in eachindex(y), j in eachindex(y))
+                       for i in eachindex(y), j in eachindex(y)) + λ * sum(β.^2)
 end
 
 
@@ -659,7 +659,7 @@ function train_interpretable_mkl(
         ###################################################################
         # 4) Compute and check objective function
         ###################################################################
-        obj = compute_objective(α, y, K_combined, β)
+        obj = compute_objective(α, y, K_combined, β, λ)
         println("Objective = ", obj)
         println("β = ", β)
         println("sum(α) = ", sum(α))
