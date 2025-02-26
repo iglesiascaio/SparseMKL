@@ -154,8 +154,11 @@ module MKL
                 kernel_matrices[i] = copy(X1X2t)
             elseif kernel_type == "polynomial"
                 degree = get(params, :degree, 3)
-                c = get(params, :c, 1.0)
-                kernel_matrices[i] = (X1X2t .+ c) .^ degree
+                # gamma  = get(params, :gamma, 1.0)  
+                c      = get(params, :c, 1.0)
+                # standard polynomial kernel: (gamma * xᵀx' + c)^degree
+                kernel_matrices[i] = (0.01 .* X1X2t .+ c) .^ degree
+            
             elseif kernel_type == "rbf"
                 gamma = get(params, :gamma, 1.0)
                 # Compute squared Euclidean distances.
@@ -309,7 +312,7 @@ module MKL
     end
 
     # Function to compute the bias term b
-    function compute_bias(α, y, K, C; tolerance = 1e-5)
+    function compute_bias(α, y, K, C; tolerance = 1e-6)
         n = length(α)
         b_values = Float64[]  # Explicitly define the type of b_values
 
@@ -319,9 +322,10 @@ module MKL
                 push!(b_values, y[i] - s)  # Compute b and store it
             end
         end
-
+        
         # Handle empty b_values
         if isempty(b_values)
+            @infiltrate
             error("No valid support vectors found. Check the input parameters.")
         end
 
