@@ -29,7 +29,6 @@ println("Loading data...")
 X_train, y_train, X_test, y_test = get_dataset(:spambase; force_download=false, frac=1.00, train_ratio=0.8)
 # X_train, y_train, X_test, y_test = get_dataset(:wine; force_download=false, frac=1.00, train_ratio=0.8)
 
-@infiltrate
 
 # Define kernel specifications
 kernels = [
