@@ -32,16 +32,16 @@ using .InterpretableMKL: train_interpretable_mkl
 ################################################################################
 DATASETS = [
     :iris, 
-    # :adult,
+    :adult,
     :wine, 
     :breastcancer,
-    # :ionosphere,
-    # :spambase,
-    # :banknote,
-    # :heart,
-    # :haberman,
-    # :mammographic,
-    # :parkinsons,
+    :ionosphere,
+    :spambase,
+    :banknote,
+    :heart,
+    :haberman,
+    :mammographic,
+    :parkinsons,
 ]
 
 ################################################################################
@@ -49,12 +49,14 @@ DATASETS = [
 ################################################################################
 kernels = [
     Dict(:type => "linear", :params => Dict()),
-    Dict(:type => "polynomial", :params => Dict(:degree => 3, :c => 1.0)),
     Dict(:type => "polynomial", :params => Dict(:degree => 2, :c => 1.0)),
+    Dict(:type => "polynomial", :params => Dict(:degree => 3, :c => 1.0)),
+    Dict(:type => "polynomial", :params => Dict(:degree => 5, :c => 1.0)),
     Dict(:type => "rbf", :params => Dict(:gamma => 0.5)),
     Dict(:type => "rbf", :params => Dict(:gamma => 0.3)),
     Dict(:type => "rbf", :params => Dict(:gamma => 0.1)),
     Dict(:type => "sigmoid", :params => Dict(:gamma => 0.5, :c0 => 1.0)),
+    Dict(:type => "sigmoid", :params => Dict(:gamma => 0.7, :c0 => 1.0)),
     Dict(:type => "laplacian", :params => Dict(:gamma => 0.3)),
 ]
 
@@ -63,8 +65,8 @@ kernels = [
 # For MKL, we do a grid over (C, λ).
 # For SVM, we do a grid over (C).
 ################################################################################
-Cs_range = [0.1, 1.0, 10.0]
-lambdas_range = [0.01, 0.1, 1.0]
+Cs_range = [5.0, 10.0, 50.0, 100.0]
+lambdas_range = [0.01, 0.1, 1.0, 10.0, 100.0]
 
 # Additional MKL hyperparameters
 k0 = 3
@@ -198,7 +200,7 @@ end
 ################################################################################
 # Cross-validation for vanilla SVM (Polynomial kernel)
 ################################################################################
-function cross_validate_svm(X, y; Cs=Cs_range, kernel=Kernel.Polynomial, nfolds=5)
+function cross_validate_svm(X, y; Cs=Cs_range, kernel=Kernel.Linear, nfolds=5)
     # X is shape (n_samples, n_features), y is length n_samples
     n = size(X, 1)
     folds = kfold_indices(n, nfolds)
@@ -329,7 +331,7 @@ for dataset in DATASETS
     best_C_svm, best_cv_acc_svm = cross_validate_svm(
         X_train, y_train; 
         Cs=Cs_range,
-        kernel=Kernel.Polynomial,
+        kernel=Kernel.Linear,
         nfolds=N_FOLDS
     )
     println("  [SVM] Best C = $best_C_svm; avg val acc = $(round(best_cv_acc_svm, digits=4))")
@@ -338,7 +340,7 @@ for dataset in DATASETS
     svm_model = svmtrain(
         X_train', Float64.(y_train); 
         svmtype = LIBSVM.SVC, 
-        kernel  = Kernel.Polynomial, 
+        kernel  = Kernel.Linear, 
         cost    = best_C_svm
     )
 
