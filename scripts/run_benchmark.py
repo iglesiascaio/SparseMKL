@@ -140,7 +140,28 @@ def kfold_indices(n, k=5, shuffle=True, seed=123):
 
 
 Cs_range = [5.0, 10.0, 50.0, 100.0]
-lambdas_range = [0.001, 0.01, 0.1, 0.5, 1.0]
+lambdas_range = [
+    0.0001,
+    0.0005,
+    0.001,
+    0.002,
+    0.005,
+    0.01,
+    0.02,
+    0.05,
+    0.1,
+    0.15,
+    0.2,
+    0.3,
+    0.4,
+    0.5,
+    0.6,
+    0.7,
+    0.8,
+    0.9,
+    0.95,
+    1.0,
+]
 
 
 def cross_validate_mkl(
@@ -253,6 +274,7 @@ RESULT_COLUMNS = [
     "MKL1_Precision",
     "MKL1_Recall",
     "MKL1_F1_Score",
+    "MKL1_Param",
     # AverageMKL
     "MKL2_TrainAccuracy",
     "MKL2_TestAccuracy",
@@ -452,6 +474,7 @@ def run_experiment_for_dataset(ds_name):
         "MKL1_Precision": mkl1_test_prec,
         "MKL1_Recall": mkl1_test_rec,
         "MKL1_F1_Score": mkl1_test_f1,
+        "MKL1_Param": best_lam,
         # AverageMKL
         "MKL2_TrainAccuracy": mkl2_train_acc,
         "MKL2_TestAccuracy": mkl2_test_acc,
