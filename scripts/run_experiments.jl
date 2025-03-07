@@ -5,6 +5,7 @@ using DataFrames, CSV
 using LIBSVM            # For the vanilla SVM baseline
 using Random
 using Statistics
+using Base: time        # For measuring final MKL fit runtime
 
 # Toggle profiling on/off:
 const ENABLE_PROFILING = false
@@ -32,7 +33,7 @@ using .InterpretableMKL: train_interpretable_mkl
 ################################################################################
 DATASETS = [
     :iris, 
-    :adult,
+    # :adult,
     :wine, 
     :breastcancer,
     :ionosphere,
@@ -52,11 +53,11 @@ kernels = [
     Dict(:type => "polynomial", :params => Dict(:degree => 2, :c => 1.0)),
     Dict(:type => "polynomial", :params => Dict(:degree => 3, :c => 1.0)),
     Dict(:type => "polynomial", :params => Dict(:degree => 5, :c => 1.0)),
-    Dict(:type => "rbf", :params => Dict(:gamma => 0.5)),
-    Dict(:type => "rbf", :params => Dict(:gamma => 0.3)),
-    Dict(:type => "rbf", :params => Dict(:gamma => 0.1)),
-    Dict(:type => "sigmoid", :params => Dict(:gamma => 0.5, :c0 => 1.0)),
-    Dict(:type => "sigmoid", :params => Dict(:gamma => 0.7, :c0 => 1.0)),
+    Dict(:type => "rbf",       :params => Dict(:gamma => 0.5)),
+    Dict(:type => "rbf",       :params => Dict(:gamma => 0.3)),
+    Dict(:type => "rbf",       :params => Dict(:gamma => 0.1)),
+    Dict(:type => "sigmoid",   :params => Dict(:gamma => 0.5, :c0 => 1.0)),
+    Dict(:type => "sigmoid",   :params => Dict(:gamma => 0.7, :c0 => 1.0)),
     Dict(:type => "laplacian", :params => Dict(:gamma => 0.3)),
 ]
 
@@ -79,26 +80,35 @@ N_FOLDS = 5
 
 ################################################################################
 # DataFrame to store results
+# We add columns for best C/λ and the final MKL fit time
 ################################################################################
 results = DataFrame(
     Dataset              = String[],
     TrainSize            = Int[],
     TestSize             = Int[],
+
     MKL_TrainAccuracy    = Float64[],
     MKL_TestAccuracy     = Float64[],
     MKL_Precision        = Float64[],
     MKL_Recall           = Float64[],
     MKL_F1_Score         = Float64[],
+
     Baseline_Accuracy    = Float64[],
     Baseline_Precision   = Float64[],
     Baseline_Recall      = Float64[],
     Baseline_F1_Score    = Float64[],
+
     SVM_TrainAccuracy    = Float64[],
     SVM_TestAccuracy     = Float64[],
     SVM_Precision        = Float64[],
     SVM_Recall           = Float64[],
     SVM_F1_Score         = Float64[],
-    Betas                = String[],
+
+    Betas                = String[],  # Already existing
+    MKL_BestC            = Float64[], # New
+    MKL_BestLambda       = Float64[], # New
+    MKL_FitTime          = Float64[], # New
+
     Status               = String[]
 )
 
@@ -143,7 +153,6 @@ function cross_validate_mkl(X, y, kernels;
                             k0=3, max_iter=50, sum_beta_val=1.0, tolerance=1e-2,
                             nfolds=5)
 
-    # X is shape (n_samples, n_features)
     n = size(X, 1)
     folds = kfold_indices(n, nfolds)
     best_acc = -Inf
@@ -201,7 +210,6 @@ end
 # Cross-validation for vanilla SVM (Polynomial kernel)
 ################################################################################
 function cross_validate_svm(X, y; Cs=Cs_range, kernel=Kernel.Linear, nfolds=5)
-    # X is shape (n_samples, n_features), y is length n_samples
     n = size(X, 1)
     folds = kfold_indices(n, nfolds)
     best_acc   = -Inf
@@ -213,10 +221,8 @@ function cross_validate_svm(X, y; Cs=Cs_range, kernel=Kernel.Linear, nfolds=5)
             val_indices = folds[fold_idx]
             train_indices = vcat(folds[setdiff(1:nfolds, fold_idx)]...)
 
-            # Training fold
             X_tr = X[train_indices, :]
             y_tr = y[train_indices]
-            # Validation fold
             X_val = X[val_indices, :]
             y_val = y[val_indices]
 
@@ -225,8 +231,6 @@ function cross_validate_svm(X, y; Cs=Cs_range, kernel=Kernel.Linear, nfolds=5)
             println("X_test shape: ", size(X_val))
             println("y_test length: ", length(y_val))
 
-
-            # Train an SVM on this fold
             svm_model = svmtrain(
                 X_tr', Float64.(y_tr);
                 svmtype = LIBSVM.SVC,
@@ -234,7 +238,6 @@ function cross_validate_svm(X, y; Cs=Cs_range, kernel=Kernel.Linear, nfolds=5)
                 cost    = c_val
             )
 
-            # Validate
             println(size(X_val'))
             println(size(X_tr'))
             y_pred_val, _ = svmpredict(svm_model, X_val')
@@ -263,7 +266,6 @@ for dataset in DATASETS
     X_train, y_train, X_test, y_test = get_dataset(dataset; force_download=false, frac=frac, train_ratio=0.8)
 
     # Possibly X comes as (#features, #samples). LIBSVM wants (#samples, #features).
-    # If the first dimension is not the number of samples, but the second dimension is, transpose:
     if size(X_train,1) != length(y_train) && size(X_train,2) == length(y_train)
         X_train = X_train'
     end
@@ -291,10 +293,11 @@ for dataset in DATASETS
     )
     println("  [MKL] Best (C, λ) = ($best_C_mkl, $best_lam_mkl); avg val acc = $(round(best_cv_acc_mkl, digits=4))")
 
-    # 2) Retrain MKL on entire training set
+    # 2) Retrain MKL on entire training set, measuring runtime
     K_list_train = compute_kernels(X_train, X_train, kernels)
     K_list_test  = compute_kernels(X_train, X_test,  kernels)
 
+    t0 = time()  # record time before final MKL fit
     α, β, K_combined, _, _ = train_interpretable_mkl(
         X_train, y_train, best_C_mkl, K_list_train, best_lam_mkl;
         max_iter=max_iter,
@@ -304,6 +307,8 @@ for dataset in DATASETS
         solver_type=:LIBSVM,
         beta_method=:gssp
     )
+    fit_time_mkl = time() - t0  # measure final fit time
+
     b = compute_bias(α, y_train, K_combined, best_C_mkl)
 
     # Evaluate MKL on train
@@ -348,33 +353,40 @@ for dataset in DATASETS
     y_pred_train_svm, _ = svmpredict(svm_model, X_train')
     SVM_TrainAccuracy, _, _, _ = compute_metrics(y_train, y_pred_train_svm)
 
-
     # Evaluate SVM on test
     y_pred_test_svm, _ = svmpredict(svm_model, X_test')
     SVM_TestAccuracy, SVM_Precision, SVM_Recall, SVM_F1_Score = compute_metrics(y_test, y_pred_test_svm)
 
-    # 5) Store results
+    # 5) Store results (adding best C/λ + final fit time for MKL)
     betas_str = join(round.(β, digits=4), ", ")
 
     push!(results, (
         string(dataset),
         train_size,
         test_size,
+
         MKL_TrainAccuracy,
         MKL_TestAccuracy,
         MKL_Precision,
         MKL_Recall,
         MKL_F1_Score,
+
         Baseline_Accuracy,
         Baseline_Precision,
         Baseline_Recall,
         Baseline_F1_Score,
+
         SVM_TrainAccuracy,
         SVM_TestAccuracy,
         SVM_Precision,
         SVM_Recall,
         SVM_F1_Score,
+
         betas_str,
+        best_C_mkl,        # new column: best C for MKL
+        best_lam_mkl,      # new column: best λ for MKL
+        fit_time_mkl,      # new column: final MKL fit time
+
         "Success"
     ))
 end
@@ -382,7 +394,9 @@ end
 ################################################################################
 # Save and display results
 ################################################################################
+println("Start writing results to CSV file")
 CSV.write("results.csv", results)  # Save results to a CSV file
+println("Results written to results.csv")
 
 # Filter successful datasets
 successful_results = filter(row -> row.Status == "Success", results)
