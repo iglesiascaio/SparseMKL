@@ -9,6 +9,9 @@ __pycache__/
 # Data
 *.csv
 
+# Output run supercloud
+*.out
+
 # Distribution / packaging
 .Python
 build/
