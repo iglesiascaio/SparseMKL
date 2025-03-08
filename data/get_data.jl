@@ -291,18 +291,19 @@ Returns a matrix of size (n_rows) x (sum_of_unique_values_in_cat_cols).
 """
 function build_one_hot_matrix(df::DataFrame, cat_cols::Vector{Symbol})
     if isempty(cat_cols)
-        return zeros(Float64, nrow(df), 0)  # No columns => 0 column matrix
+        return zeros(Float64, nrow(df), 0)  # No categorical columns => return empty matrix
     end
 
     out_mats = Matrix{Float64}[]
     for col in cat_cols
-        # Gather unique values (which might be strings, chars, or ints)
+        # Gather unique values (sorted)
         vals = sort(unique(df[!, col]))
         n = nrow(df)
-        k = length(vals)
+        k = length(vals) - 1  # Use (n-1) columns to avoid multicollinearity
+
+        # One-hot encode without the last category (acts as a reference)
         M = zeros(Float64, n, k)
-        # Fill the 1/0 for each unique value
-        for (j, v) in enumerate(vals)
+        for (j, v) in enumerate(vals[1:end-1])  # Exclude last category
             for i in 1:n
                 if df[i, col] == v
                     M[i, j] = 1.0
@@ -312,7 +313,7 @@ function build_one_hot_matrix(df::DataFrame, cat_cols::Vector{Symbol})
         push!(out_mats, M)
     end
 
-    # Horizontal concatenation of all one-hot submatrices
+    # Concatenate all one-hot encoded columns
     return hcat(out_mats...)
 end
 
