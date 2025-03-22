@@ -121,8 +121,8 @@ function soc_relaxation_1_solver(
     n = size(K_list[1], 1)
     q = length(K_list)
 
-    model = Model(Gurobi.Optimizer)
-    set_optimizer_attribute(model, "OutputFlag", 0)
+    model = Model(Mosek.Optimizer)
+    # set_optimizer_attribute(model, "OutputFlag", 0)
 
     @variable(model, η)
     @variable(model, θ >= 0)
@@ -136,15 +136,19 @@ function soc_relaxation_1_solver(
     @constraint(model, [i in 1:n], 1 - σ[i] <= y[i]*(η + γ[i]))
 
     # 2) for each j, s[j] = θ * ∑ β[i]*K_list[i][j,j], and s[j] >= γ[j]^2
+    # @variable(model, s[1:n] >= 0)
+    # for j in 1:n
+    #     @constraint(model, s[j] == θ * sum(β[i]*K_list[i][j,j] for i=1:q))
+
+    #     # Rotated SOC: s[j]*1 >= (γ[j])^2
+    #     # => [s[j], 1, sqrt(2)*γ[j]] in RotatedSecondOrderCone()
+    #     @constraint(model, [s[j], 1, sqrt(2)*γ[j]] in RotatedSecondOrderCone())
+    # end
     @variable(model, s[1:n] >= 0)
     for j in 1:n
-        @constraint(model, s[j] == θ * sum(β[i]*K_list[i][j,j] for i=1:q))
-
-        # Rotated SOC: s[j]*1 >= (γ[j])^2
-        # => [s[j], 1, sqrt(2)*γ[j]] in RotatedSecondOrderCone()
-        @constraint(model, [s[j], 1, sqrt(2)*γ[j]] in RotatedSecondOrderCone())
+        @constraint(model, s[j] == sum(β[i]*K_list[i][j,j] for i=1:q))
+        @constraint(model, [0.5 * θ; s[j]; γ[j]] in RotatedSecondOrderCone())
     end
-
     # 3) sum(β)=1 if desired
     if sum_beta_val
         @constraint(model, sum(β) == 1)
@@ -167,7 +171,9 @@ function soc_relaxation_1_solver(
 end
 
 
-############### Method C: Second, Tighter SOC Relaxation (Gurobi) ###############
+
+################ Method C: Second, Tighter SOC Relaxation (Using e_j) ################
+
 function soc_relaxation_2_solver(
     K_list::Vector{Matrix{Float64}},
     y::Vector{Float64},
@@ -179,9 +185,13 @@ function soc_relaxation_2_solver(
     n = size(K_list[1], 1)
     q = length(K_list)
 
-    model = Model(Gurobi.Optimizer)
-    set_optimizer_attribute(model, "OutputFlag", 0)
+    model = Model(Mosek.Optimizer)
+    # You can set optimizer attributes as needed, e.g.:
+    # set_optimizer_attribute(model, "QUIET", true)
 
+    #
+    # === Variables ===
+    #
     @variable(model, η)
     @variable(model, θ >= 0)
     @variable(model, σ[1:n] >= 0)
@@ -190,56 +200,64 @@ function soc_relaxation_2_solver(
     @variable(model, ω[1:q] >= 0)
     @variable(model, 0 <= z[1:q] <= 1)
 
-    # 1) margin constraints
+    #
+    # === 1) Margin constraints: 1 - σ[i] <= y[i]*(η + γ[i]) ===
+    #
     @constraint(model, [i in 1:n], 1 - σ[i] <= y[i]*(η + γ[i]))
 
-    # 2) We introduce t >= ||γ||_2 and enforce for each j:
-    #      θ * sum(β[i]*K_i[j,j]) >= γ^T γ.
-    #    Implementation: we do t >= ||γ||, then
-    #      θ * sum(...) >= t, but t^2 >= sum(γ[j]^2).
-    @variable(model, t >= 0)
-    @constraint(model, [t; γ...] in SecondOrderCone())  # t >= ||γ||
-
-    # diag_s[j] = θ * sum(...) for each diagonal index
-    @variable(model, diag_s[1:n] >= 0)
+    #
+    # === 2) For each j, enforce  ( sum_i β[i] K_i[j,j ] ) * θ  >=  (γ[j])^2
+    #     i.e. s[j] * θ >= γ[j]^2
+    #     via rotated SOC: [ s[j], θ, sqrt(2)*γ[j] ] in RotatedSecondOrderCone()
+    #
+    @variable(model, s[1:n] >= 0)  # s[j] = sum( β[i]*K_i[j,j] )
     for j in 1:n
-        @constraint(model, diag_s[j] == θ * sum(β[i]*K_list[i][j,j] for i=1:q))
-        @constraint(model, diag_s[j] >= t)
+        @constraint(model, s[j] == sum( β[i]*K_list[i][j,j] for i=1:q ))
+        @constraint(model, [s[j], θ, sqrt(2)*γ[j]] in RotatedSecondOrderCone())
     end
 
-    # 3) sum(β)=1 if desired
+    #
+    # === 3) sum(β) = 1 if desired ===
+    #
     if sum_beta_val
         @constraint(model, sum(β) == 1)
     end
 
-    # 4) sum(z) <= k
+    #
+    # === 4) sum(z) <= k ===
+    #
     @constraint(model, sum(z) <= k)
 
-    # 5) β[i]^2 <= z[i]*ω[i] => RSoC
+    #
+    # === 5) β[i]^2 <= z[i]*ω[i] => [z[i], ω[i], sqrt(2)*β[i]] in RotatedSecondOrderCone()
+    #
     for i in 1:q
-        @constraint(model, z[i] >= 0)
-        @constraint(model, ω[i] >= 0)
         @constraint(model, [z[i], ω[i], sqrt(2)*β[i]] in RotatedSecondOrderCone())
     end
 
+    #
+    # === Objective: C * ∑σ[i] + 0.5*θ + λ * ∑ω[i] ===
+    #
     @objective(model, Min, C*sum(σ) + 0.5*θ + λ*sum(ω))
+
     optimize!(model)
 
     return objective_value(model), value.(β)
 end
 
 
-############### Method D: SOC Relaxation (C) + Random Unit Vectors (Gurobi) ###############
+using JuMP, Gurobi, LinearAlgebra, Random
+
 """
     soc_relaxation_2_solver_D(K_list, y, C, λ, k; sum_beta_val=true, L=10)
 
 An adaptation of Method C that, in addition to the standard basis vector
-constraints, also imposes:
+constraints, also imposes, for L randomly generated unit vectors x:
 
-    θ * (xᵀ [CK] x)  ≥  γᵀ γ
+    [ r(x), θ, √2·(xᵀγ) ] ∈ RotatedSecondOrderCone()
 
-for L randomly generated unit vectors x. This further tightens the SOC
-relaxation by sampling more vectors in the unit sphere.
+where r(x) = ∑₍i₌1₎^q β[i]*(xᵀ K_i x). This further tightens the SOC
+relaxation by sampling more directions from the unit sphere.
 """
 function soc_relaxation_2_solver_D(
     K_list::Vector{Matrix{Float64}},
@@ -247,21 +265,18 @@ function soc_relaxation_2_solver_D(
     C::Float64,
     λ::Float64,
     k::Int;
-    sum_beta_val::Bool=true,
-    L::Int=10
+    sum_beta_val::Bool = true,
+    L::Int = 10
 )
-    # K_list: list of q kernel matrices
-    # y: labels
-    # C, λ, k: as before
-    # sum_beta_val => whether to enforce sum(β)=1
-    # L => number of random vectors to sample
-
+    # Dimensions and number of kernels.
     n = size(K_list[1], 1)
     q = length(K_list)
 
+    # Create the model using Gurobi.
     model = Model(Gurobi.Optimizer)
     set_optimizer_attribute(model, "OutputFlag", 0)
 
+    # === Decision Variables ===
     @variable(model, η)
     @variable(model, θ >= 0)
     @variable(model, σ[1:n] >= 0)
@@ -270,62 +285,69 @@ function soc_relaxation_2_solver_D(
     @variable(model, ω[1:q] >= 0)
     @variable(model, 0 <= z[1:q] <= 1)
 
-    # 1) margin constraints
+    # === 1) Margin Constraints ===
+    # For each data point, 1 - σ[i] <= y[i]*(η + γ[i])
     @constraint(model, [i in 1:n], 1 - σ[i] <= y[i]*(η + γ[i]))
 
-    # 2) We again let t >= ||γ||_2
-    @variable(model, t >= 0)
-    @constraint(model, [t; γ...] in SecondOrderCone())  # ensures t >= norm(γ)
-
-    # (a) The original n constraints for the standard basis vectors e_j
+    # === 2a) SOC Constraints for the Standard Basis Directions ===
+    # For each j, define diag_s[j] = ∑₍i₌1₎^q β[i]*K_list[i][j,j]
+    # and impose [ diag_s[j], θ, √2·γ[j] ] ∈ RSoC, i.e.
+    # diag_s[j] * θ ≥ γ[j]^2.
     @variable(model, diag_s[1:n] >= 0)
     for j in 1:n
-        @constraint(model, diag_s[j] == θ * sum(β[i]*K_list[i][j,j] for i=1:q))
-        @constraint(model, diag_s[j] >= t)
+        @constraint(model, diag_s[j] == sum(β[i] * K_list[i][j,j] for i in 1:q))
+        @constraint(model, [diag_s[j], θ, sqrt(2)*γ[j]] in RotatedSecondOrderCone())
     end
 
-    # (b) Now add L random unit vectors:
-    #     For each random x, impose θ * (xᵀ [CK] x) >= t.
-    @variable(model, rand_s[1:L] >= 0)
-
-    # Generate L random vectors in R^n, each normalized to unit length
-    random_vectors = [ randn(n) for _ in 1:L ]
-    for v in random_vectors
-        v ./= norm(v)  # normalize
-    end
-
-    # Add constraints for each random vector x
+    # === 2b) SOC Constraints for L Random Unit Vectors ===
+    # Generate L random unit vectors in ℝⁿ.
+    random_vectors = Vector{Vector{Float64}}(undef, L)
     for l in 1:L
-        # compute xᵀ K_i x for each i
-        @constraint(model,
-            rand_s[l] ==
-                θ * sum( β[i] * (random_vectors[l]' * K_list[i] * random_vectors[l])
-                         for i in 1:q )
-        )
-        @constraint(model, rand_s[l] >= t)
+        v = randn(n)
+        v /= norm(v)  # Normalize to unit length.
+        random_vectors[l] = v
     end
 
-    # 3) sum(β)=1 if desired
+    # For each random vector x (indexed by l), define:
+    #   r[l] = ∑₍i₌1₎^q β[i]*(xᵀ*K_list[i]*x)
+    # and impose [ r[l], θ, √2·(xᵀγ) ] ∈ RSoC.
+    @variable(model, rand_s[1:L] >= 0)
+    for l in 1:L
+        @constraint(model,
+            rand_s[l] == sum(β[i] * (random_vectors[l]' * K_list[i] * random_vectors[l])
+                              for i in 1:q)
+        )
+        # Compute the affine expression xᵀγ.
+        @constraint(model,
+            [rand_s[l], θ, sqrt(2) * (sum(random_vectors[l][j]*γ[j] for j in 1:n))]
+            in RotatedSecondOrderCone()
+        )
+    end
+
+    # === 3) Enforce sum(β) = 1 if desired ===
     if sum_beta_val
         @constraint(model, sum(β) == 1)
     end
 
-    # 4) sum(z) <= k
+    # === 4) Cardinality Constraint on z: sum(z) <= k ===
     @constraint(model, sum(z) <= k)
 
-    # 5) β[i]^2 <= z[i] * ω[i] => RSoC
+    # === 5) Linking β and z via a rotated SOC constraint ===
+    # For each i, enforce β[i]² <= z[i]*ω[i] by
+    # requiring [ z[i], ω[i], √2·β[i] ] ∈ RSoC.
     for i in 1:q
-        @constraint(model, z[i] >= 0)
-        @constraint(model, ω[i] >= 0)
         @constraint(model, [z[i], ω[i], sqrt(2)*β[i]] in RotatedSecondOrderCone())
     end
 
-    # Objective
-    @objective(model, Min, C*sum(σ) + 0.5*θ + λ*sum(ω))
+    # === 6) Objective ===
+    # Minimize: C * ∑σ[i] + 0.5 * θ + λ * ∑ω[i]
+    @objective(model, Min, C * sum(σ) + 0.5 * θ + λ * sum(ω))
+
     optimize!(model)
 
     return objective_value(model), value.(β)
 end
+
 
 
 ############### 5) A helper to dispatch any of the four methods ###############
@@ -361,17 +383,20 @@ end
 ############### 6) Main driver ###############
 function main()
     # Just test one dataset for demonstration
-    datasets = [:iris]
+    datasets = [:parkinsons]
 
     # We now also add :soc2random to show the new method
     methods = [
-        :perspective, 
-    :soc1, :soc2, :soc2random]
+        # :perspective, 
+        # :soc1, 
+        :soc2, 
+        :soc2random
+        ]
 
     C = 5.0
-    λ = 0.01
+    λ = 100.0
     k = 3
-    L = 200   # number of random vectors
+    L = 1000   # number of random vectors
 
     results = DataFrame(
         dataset = String[],
