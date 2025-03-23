@@ -8,8 +8,8 @@ include("../MKL/multi_kernel.jl")
 using .MKL: compute_kernels, compute_combined_kernel
 
 using JuMP
-using MosekTools     # For the perspective-based MISDP
-using Gurobi         # For the two SOC relaxations
+using MosekTools     # For the perspective-based MISDP and our new 3×3, 4×4 PSD constraints
+using Gurobi         # (We keep this for the existing two SOC relaxations, if desired.)
 using LinearAlgebra
 using LIBSVM
 using Statistics
@@ -46,9 +46,8 @@ function symmetrize!(K::Matrix{Float64}; tol::Float64=1e-10)
     return K
 end
 
-
 ############### Method A: Perspective‐based MISDP solver (Mosek) ###############
-function psd_2x2_mkl_sdp_solver(
+function mkl_psd_solver(
     K_list::Vector{Matrix{Float64}},
     y::Vector{Float64},
     C::Float64,
@@ -108,8 +107,7 @@ function psd_2x2_mkl_sdp_solver(
     return objective_value(model), value.(β)
 end
 
-
-############### Method B: First SOC Relaxation (Gurobi) ###############
+################ Method B: SOC Relaxation (Using e_j) ################
 function soc_relaxation_1_solver(
     K_list::Vector{Matrix{Float64}},
     y::Vector{Float64},
@@ -122,71 +120,6 @@ function soc_relaxation_1_solver(
     q = length(K_list)
 
     model = Model(Mosek.Optimizer)
-    # set_optimizer_attribute(model, "OutputFlag", 0)
-
-    @variable(model, η)
-    @variable(model, θ >= 0)
-    @variable(model, σ[1:n] >= 0)
-    @variable(model, γ[1:n])
-    @variable(model, β[1:q] >= 0)
-    @variable(model, ω[1:q] >= 0)
-    @variable(model, 0 <= z[1:q] <= 1)
-
-    # 1) margin constraints
-    @constraint(model, [i in 1:n], 1 - σ[i] <= y[i]*(η + γ[i]))
-
-    # 2) for each j, s[j] = θ * ∑ β[i]*K_list[i][j,j], and s[j] >= γ[j]^2
-    # @variable(model, s[1:n] >= 0)
-    # for j in 1:n
-    #     @constraint(model, s[j] == θ * sum(β[i]*K_list[i][j,j] for i=1:q))
-
-    #     # Rotated SOC: s[j]*1 >= (γ[j])^2
-    #     # => [s[j], 1, sqrt(2)*γ[j]] in RotatedSecondOrderCone()
-    #     @constraint(model, [s[j], 1, sqrt(2)*γ[j]] in RotatedSecondOrderCone())
-    # end
-    @variable(model, s[1:n] >= 0)
-    for j in 1:n
-        @constraint(model, s[j] == sum(β[i]*K_list[i][j,j] for i=1:q))
-        @constraint(model, [0.5 * θ; s[j]; γ[j]] in RotatedSecondOrderCone())
-    end
-    # 3) sum(β)=1 if desired
-    if sum_beta_val
-        @constraint(model, sum(β) == 1)
-    end
-
-    # 4) sum(z) <= k
-    @constraint(model, sum(z) <= k)
-
-    # 5) β[i]^2 <= z[i]* ω[i], use RSoC form
-    for i in 1:q
-        @constraint(model, z[i] >= 0)
-        @constraint(model, ω[i] >= 0)
-        @constraint(model, [z[i], ω[i], sqrt(2)*β[i]] in RotatedSecondOrderCone())
-    end
-
-    @objective(model, Min, C*sum(σ) + 0.5*θ + λ*sum(ω))
-    optimize!(model)
-
-    return objective_value(model), value.(β)
-end
-
-
-
-################ Method C: Second, Tighter SOC Relaxation (Using e_j) ################
-
-function soc_relaxation_2_solver(
-    K_list::Vector{Matrix{Float64}},
-    y::Vector{Float64},
-    C::Float64,
-    λ::Float64,
-    k::Int;
-    sum_beta_val::Bool=true
-)
-    n = size(K_list[1], 1)
-    q = length(K_list)
-
-    model = Model(Mosek.Optimizer)
-    # You can set optimizer attributes as needed, e.g.:
     # set_optimizer_attribute(model, "QUIET", true)
 
     #
@@ -201,18 +134,17 @@ function soc_relaxation_2_solver(
     @variable(model, 0 <= z[1:q] <= 1)
 
     #
-    # === 1) Margin constraints: 1 - σ[i] <= y[i]*(η + γ[i]) ===
+    # === 1) Margin constraints ===
     #
     @constraint(model, [i in 1:n], 1 - σ[i] <= y[i]*(η + γ[i]))
 
     #
-    # === 2) For each j, enforce  ( sum_i β[i] K_i[j,j ] ) * θ  >=  (γ[j])^2
-    #     i.e. s[j] * θ >= γ[j]^2
-    #     via rotated SOC: [ s[j], θ, sqrt(2)*γ[j] ] in RotatedSecondOrderCone()
+    # === 2) 2×2 minors: θ * (∑β[i]K_i[j,j]) ≥ (γ[j])^2
     #
-    @variable(model, s[1:n] >= 0)  # s[j] = sum( β[i]*K_i[j,j] )
+    @variable(model, s[1:n] >= 0)
     for j in 1:n
         @constraint(model, s[j] == sum( β[i]*K_list[i][j,j] for i=1:q ))
+        # Rotated SOC: [ s[j], θ, sqrt(2)*γ[j] ] in RotatedSecondOrderCone()
         @constraint(model, [s[j], θ, sqrt(2)*γ[j]] in RotatedSecondOrderCone())
     end
 
@@ -229,14 +161,14 @@ function soc_relaxation_2_solver(
     @constraint(model, sum(z) <= k)
 
     #
-    # === 5) β[i]^2 <= z[i]*ω[i] => [z[i], ω[i], sqrt(2)*β[i]] in RotatedSecondOrderCone()
+    # === 5) β[i]^2 <= z[i]*ω[i] => RSoC
     #
     for i in 1:q
         @constraint(model, [z[i], ω[i], sqrt(2)*β[i]] in RotatedSecondOrderCone())
     end
 
     #
-    # === Objective: C * ∑σ[i] + 0.5*θ + λ * ∑ω[i] ===
+    # === Objective ===
     #
     @objective(model, Min, C*sum(σ) + 0.5*θ + λ*sum(ω))
 
@@ -245,21 +177,11 @@ function soc_relaxation_2_solver(
     return objective_value(model), value.(β)
 end
 
-
-using JuMP, Gurobi, LinearAlgebra, Random
-
 """
-    soc_relaxation_2_solver_D(K_list, y, C, λ, k; sum_beta_val=true, L=10)
-
-An adaptation of Method C that, in addition to the standard basis vector
-constraints, also imposes, for L randomly generated unit vectors x:
-
-    [ r(x), θ, √2·(xᵀγ) ] ∈ RotatedSecondOrderCone()
-
-where r(x) = ∑₍i₌1₎^q β[i]*(xᵀ K_i x). This further tightens the SOC
-relaxation by sampling more directions from the unit sphere.
+An adaptation of the SOC relaxation that also samples L random vectors x
+and adds constraints of the form (∑β[i] xᵀK_i x)*θ ≥ (xᵀγ)².
 """
-function soc_relaxation_2_solver_D(
+function soc_relaxation_2_solver_random(
     K_list::Vector{Matrix{Float64}},
     y::Vector{Float64},
     C::Float64,
@@ -268,15 +190,12 @@ function soc_relaxation_2_solver_D(
     sum_beta_val::Bool = true,
     L::Int = 10
 )
-    # Dimensions and number of kernels.
     n = size(K_list[1], 1)
     q = length(K_list)
 
-    # Create the model using Gurobi.
-    model = Model(Gurobi.Optimizer)
-    set_optimizer_attribute(model, "OutputFlag", 0)
+    model = Model(Mosek.Optimizer)
 
-    # === Decision Variables ===
+    # === Variables ===
     @variable(model, η)
     @variable(model, θ >= 0)
     @variable(model, σ[1:n] >= 0)
@@ -285,63 +204,50 @@ function soc_relaxation_2_solver_D(
     @variable(model, ω[1:q] >= 0)
     @variable(model, 0 <= z[1:q] <= 1)
 
-    # === 1) Margin Constraints ===
-    # For each data point, 1 - σ[i] <= y[i]*(η + γ[i])
+    # === 1) Margin constraints ===
     @constraint(model, [i in 1:n], 1 - σ[i] <= y[i]*(η + γ[i]))
 
-    # === 2a) SOC Constraints for the Standard Basis Directions ===
-    # For each j, define diag_s[j] = ∑₍i₌1₎^q β[i]*K_list[i][j,j]
-    # and impose [ diag_s[j], θ, √2·γ[j] ] ∈ RSoC, i.e.
-    # diag_s[j] * θ ≥ γ[j]^2.
+    # === 2a) Standard-basis 2×2 constraints (like soc1)
     @variable(model, diag_s[1:n] >= 0)
     for j in 1:n
-        @constraint(model, diag_s[j] == sum(β[i] * K_list[i][j,j] for i in 1:q))
+        @constraint(model, diag_s[j] == sum(β[i]*K_list[i][j,j] for i=1:q))
         @constraint(model, [diag_s[j], θ, sqrt(2)*γ[j]] in RotatedSecondOrderCone())
     end
 
-    # === 2b) SOC Constraints for L Random Unit Vectors ===
-    # Generate L random unit vectors in ℝⁿ.
+    # === 2b) L random unit vectors for extra constraints
     random_vectors = Vector{Vector{Float64}}(undef, L)
     for l in 1:L
         v = randn(n)
-        v /= norm(v)  # Normalize to unit length.
+        v /= norm(v)  # normalize
         random_vectors[l] = v
     end
 
-    # For each random vector x (indexed by l), define:
-    #   r[l] = ∑₍i₌1₎^q β[i]*(xᵀ*K_list[i]*x)
-    # and impose [ r[l], θ, √2·(xᵀγ) ] ∈ RSoC.
     @variable(model, rand_s[1:L] >= 0)
     for l in 1:L
         @constraint(model,
-            rand_s[l] == sum(β[i] * (random_vectors[l]' * K_list[i] * random_vectors[l])
-                              for i in 1:q)
+            rand_s[l] == sum(β[i]*(random_vectors[l]' * K_list[i] * random_vectors[l]) for i in 1:q)
         )
-        # Compute the affine expression xᵀγ.
         @constraint(model,
-            [rand_s[l], θ, sqrt(2) * (sum(random_vectors[l][j]*γ[j] for j in 1:n))]
+            [rand_s[l], θ, sqrt(2)*(sum(random_vectors[l][j]*γ[j] for j in 1:n))]
             in RotatedSecondOrderCone()
         )
     end
 
-    # === 3) Enforce sum(β) = 1 if desired ===
+    # === 3) sum(β) = 1 if desired
     if sum_beta_val
         @constraint(model, sum(β) == 1)
     end
 
-    # === 4) Cardinality Constraint on z: sum(z) <= k ===
+    # === 4) sum(z) <= k
     @constraint(model, sum(z) <= k)
 
-    # === 5) Linking β and z via a rotated SOC constraint ===
-    # For each i, enforce β[i]² <= z[i]*ω[i] by
-    # requiring [ z[i], ω[i], √2·β[i] ] ∈ RSoC.
+    # === 5) β[i]^2 <= z[i]*ω[i] => RSoC
     for i in 1:q
         @constraint(model, [z[i], ω[i], sqrt(2)*β[i]] in RotatedSecondOrderCone())
     end
 
-    # === 6) Objective ===
-    # Minimize: C * ∑σ[i] + 0.5 * θ + λ * ∑ω[i]
-    @objective(model, Min, C * sum(σ) + 0.5 * θ + λ * sum(ω))
+    # === 6) Objective
+    @objective(model, Min, C*sum(σ) + 0.5*θ + λ*sum(ω))
 
     optimize!(model)
 
@@ -349,9 +255,150 @@ function soc_relaxation_2_solver_D(
 end
 
 
+#################### soc_relaxation_3_solver ####################
+function soc_relaxation_3_solver(
+    K_list::Vector{Matrix{Float64}},
+    y::Vector{Float64},
+    C::Float64,
+    λ::Float64,
+    k::Int;
+    sum_beta_val::Bool=true
+)
+    # Match the style of mkl_psd_solver but only enforce 3×3 sub-blocks PSD.
+    n = size(K_list[1],1)
+    q = length(K_list)
 
-############### 5) A helper to dispatch any of the four methods ###############
-function solve_mkl_problem(
+    model = Model(Mosek.Optimizer)
+    set_optimizer_attribute(model, "QUIET", true)
+
+    # Variables
+    @variable(model, η)
+    @variable(model, θ >= 0)
+    @variable(model, σ[1:n] >= 0)
+    @variable(model, γ[1:n])
+    @variable(model, β[1:q] >= 0)
+    @variable(model, ω[1:q] >= 0)
+    @variable(model, 0 <= z[1:q] <= 1)
+
+    # Big (n+1)×(n+1) matrix M, not declared fully PSD
+    @variable(model, M[1:(n+1), 1:(n+1)])
+
+    # 1) Margin constraints
+    @constraint(model, [i in 1:n], 1 - σ[i] <= y[i]*(η + γ[i]))
+
+    # 2) Link M to (θ, γ, ∑β[i]K_list[i])
+    @constraint(model, M[1,1] == θ)
+    for i in 1:n
+        @constraint(model, M[i+1,1] == γ[i])
+        @constraint(model, M[1,i+1] == γ[i])
+    end
+    for i in 1:n, j_ in 1:n
+        @constraint(model, M[i+1, j_+1] == sum(β[r]*K_list[r][i,j_] for r in 1:q))
+    end
+
+    # 3) sum(β) = 1 if desired
+    if sum_beta_val
+        @constraint(model, sum(β) == 1)
+    end
+
+    # 4) sum(z) <= k
+    @constraint(model, sum(z) <= k)
+
+    # 5) PSD constraints: 2x2 PSD for β
+    for i in 1:q
+        @constraint(model, [z[i], ω[i], sqrt(2)*β[i]] in RotatedSecondOrderCone())
+    end
+
+    # 6) 3×3 sub-blocks that include θ (row/col 1)
+    for j in 1:(n-1)
+        for k_ in (j+1):n
+            @constraint(model,
+                M[[1, j+1, k_+1], [1, j+1, k_+1]] in PSDCone()
+            )
+        end
+    end
+
+    # 7) Objective
+    @objective(model, Min, C*sum(σ) + 0.5*θ + λ*sum(ω))
+
+    optimize!(model)
+    return objective_value(model), value.(β)
+end
+
+#################### soc_relaxation_4_solver ####################
+function soc_relaxation_4_solver(
+    K_list::Vector{Matrix{Float64}},
+    y::Vector{Float64},
+    C::Float64,
+    λ::Float64,
+    k::Int;
+    sum_beta_val::Bool=true
+)
+    # Match the style of mkl_psd_solver but only enforce 4×4 sub-blocks PSD.
+    n = size(K_list[1],1)
+    q = length(K_list)
+
+    model = Model(Mosek.Optimizer)
+    set_optimizer_attribute(model, "QUIET", true)
+
+    # Variables
+    @variable(model, η)
+    @variable(model, θ >= 0)
+    @variable(model, σ[1:n] >= 0)
+    @variable(model, γ[1:n])
+    @variable(model, β[1:q] >= 0)
+    @variable(model, ω[1:q] >= 0)
+    @variable(model, 0 <= z[1:q] <= 1)
+
+    # Big (n+1)×(n+1) matrix M, not declared fully PSD
+    @variable(model, M[1:(n+1), 1:(n+1)])
+
+    # 1) Margin constraints
+    @constraint(model, [i in 1:n], 1 - σ[i] <= y[i]*(η + γ[i]))
+
+    # 2) Link M to (θ, γ, ∑β[i]K_list[i])
+    @constraint(model, M[1,1] == θ)
+    for i in 1:n
+        @constraint(model, M[i+1,1] == γ[i])
+        @constraint(model, M[1,i+1] == γ[i])
+    end
+    for i in 1:n, j_ in 1:n
+        @constraint(model, M[i+1, j_+1] == sum(β[r]*K_list[r][i,j_] for r in 1:q))
+    end
+
+    # 3) sum(β) = 1 if desired
+    if sum_beta_val
+        @constraint(model, sum(β) == 1)
+    end
+
+    # 4) sum(z) <= k
+    @constraint(model, sum(z) <= k)
+
+    # 5) Perspective constraints: 2x2 PSD for β
+    for i in 1:q
+        @constraint(model, [z[i], ω[i], sqrt(2)*β[i]] in RotatedSecondOrderCone())
+    end
+
+    # 6) 4×4 sub-blocks that include θ (row/col 1)
+    for j in 1:(n-2)
+        for k_ in (j+1):(n-1)
+            for l in (k_+1):n
+                @constraint(model,
+                    M[[1, j+1, k_+1, l+1], [1, j+1, k_+1, l+1]] in PSDCone()
+                )
+            end
+        end
+    end
+
+    # 7) Objective
+    @objective(model, Min, C*sum(σ) + 0.5*θ + λ*sum(ω))
+
+    optimize!(model)
+    return objective_value(model), value.(β)
+end
+
+############### 5) A helper to dispatch any of the six methods ###############
+function solve_mkl_lower_bound(
     method::Symbol,
     K_list::Vector{Matrix{Float64}},
     y::Vector{Float64},
@@ -362,41 +409,53 @@ function solve_mkl_problem(
     L::Int=10
 )
     if method == :perspective
-        return psd_2x2_mkl_sdp_solver(K_list, y, C, λ, k; sum_beta_val=sum_beta_val)
+        return mkl_psd_solver(K_list, y, C, λ, k; sum_beta_val=sum_beta_val)
     elseif method == :soc1
         return soc_relaxation_1_solver(K_list, y, C, λ, k; sum_beta_val=sum_beta_val)
-    elseif method == :soc2
-        return soc_relaxation_2_solver(K_list, y, C, λ, k; sum_beta_val=sum_beta_val)
     elseif method == :soc2random
-        # Our new "Method D"
-        return soc_relaxation_2_solver_D(
+        return soc_relaxation_2_solver_random(
             K_list, y, C, λ, k;
             sum_beta_val=sum_beta_val,
             L=L
         )
+    elseif method == :soc3
+        return soc_relaxation_3_solver(K_list, y, C, λ, k; sum_beta_val=sum_beta_val)
+    elseif method == :soc4
+        return soc_relaxation_4_solver(K_list, y, C, λ, k; sum_beta_val=sum_beta_val)
     else
         error("Unknown method symbol: $method")
     end
 end
 
-
 ############### 6) Main driver ###############
 function main()
     # Just test one dataset for demonstration
-    datasets = [:parkinsons]
+    datasets = [
+        :iris, 
+        # :adult,
+        :wine, 
+        :breastcancer,
+        :ionosphere,
+        :spambase,
+        :banknote,
+        :heart,
+        :haberman,
+        :mammographic,
+        :parkinsons,
+    ]
 
-    # We now also add :soc2random to show the new method
     methods = [
-        # :perspective, 
-        # :soc1, 
-        :soc2, 
-        :soc2random
-        ]
+        :perspective,
+        :soc1,
+        :soc2random,
+        :soc3,
+        :soc4
+    ]
 
     C = 5.0
     λ = 100.0
     k = 3
-    L = 1000   # number of random vectors
+    L = 1000   # number of random vectors for soc2random
 
     results = DataFrame(
         dataset = String[],
@@ -416,7 +475,7 @@ function main()
         end
         y_train = Float64.(y_train)
         y_test  = Float64.(y_test)
-
+    
         kernel_specs = [
             Dict(:type => "linear", :params => Dict()),
             Dict(:type => "polynomial", :params => Dict(:degree => 2, :c => 1.0)),
@@ -430,20 +489,21 @@ function main()
             Dict(:type => "laplacian", :params => Dict(:gamma => 0.3)),
         ]
         K_list_train = compute_kernels(X_train, X_train, kernel_specs)
-
+    
         for meth in methods
             println("  >> Solving with method: $meth")
-
+    
             t0 = time()
             obj_val = nothing
             β_star = nothing
             try
-                obj_val, β_star = solve_mkl_problem(meth, K_list_train, y_train, C, λ, k;
+                obj_val, β_star = solve_mkl_lower_bound(meth, K_list_train, y_train, C, λ, k;
                                                     sum_beta_val=true, L=L)
                 runtime = time() - t0
                 println("     objective = ", obj_val)
                 println("     β* = ", β_star)
-
+                println("     runtime = ", runtime)
+    
                 push!(results, (
                     string(dset),
                     string(meth),
@@ -462,8 +522,9 @@ function main()
             end
         end
     end
+    
 
-    CSV.write("mkl_results.csv", results)
+    CSV.write("lower_bound_results.csv", results)
     println("\nAll done. Results stored in `mkl_results.csv`.")
 end
 
