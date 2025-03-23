@@ -63,24 +63,29 @@ kernels = [
 
 ################################################################################
 # Hyperparameters to search
-# For MKL, we do a grid over (C, λ).
+# For MKL, we do a grid over (C, λ) and now k0.
 # For SVM, we do a grid over (C).
 ################################################################################
-Cs_range = [5.0, 10.0, 50.0, 100.0]
+Cs_range = [5.0, 10.0, 50.0, 100.0,]
+k0_range = [1, 2, 3, 4, 5,] 
 lambdas_range = [0.01, 0.1, 1.0, 10.0, 100.0]
 
+# Cs_range = [5.0]
+# k0_range = [4]
+# lambdas_range = [100.0]
+
+
 # Additional MKL hyperparameters
-k0 = 3
+# (Now we will *not* hardcode k0; it will be tuned from a range)
 max_iter = 50
 sum_beta_val = 1.0
 tolerance = 1e-2
 
 # Cross-validation folds
-N_FOLDS = 5
+N_FOLDS = 10
 
 ################################################################################
 # DataFrame to store results
-# We add columns for best C/λ and the final MKL fit time
 ################################################################################
 results = DataFrame(
     Dataset              = String[],
@@ -104,10 +109,11 @@ results = DataFrame(
     SVM_Recall           = Float64[],
     SVM_F1_Score         = Float64[],
 
-    Betas                = String[],  # Already existing
-    MKL_BestC            = Float64[], # New
-    MKL_BestLambda       = Float64[], # New
-    MKL_FitTime          = Float64[], # New
+    Betas                = String[],
+    MKL_BestK0           = Int[],     # NEW
+    MKL_BestC            = Float64[],
+    MKL_BestLambda       = Float64[],
+    MKL_FitTime          = Float64[],
 
     Status               = String[]
 )
@@ -146,11 +152,15 @@ end
 
 ################################################################################
 # Cross-validation for the MKL approach
+# Now includes a loop over k0 in [1, 2, 3, 4, 5].
 ################################################################################
 function cross_validate_mkl(X, y, kernels;
                             Cs = Cs_range,
                             lambdas = lambdas_range,
-                            k0=3, max_iter=50, sum_beta_val=1.0, tolerance=1e-2,
+                            k0_range = [1, 2, 3, 4, 5],  # NEW
+                            max_iter=50,
+                            sum_beta_val=1.0,
+                            tolerance=1e-2,
                             nfolds=5)
 
     n = size(X, 1)
@@ -158,52 +168,56 @@ function cross_validate_mkl(X, y, kernels;
     best_acc = -Inf
     best_C   = nothing
     best_lam = nothing
+    best_k0  = nothing
 
-    for c_val in Cs
-        for lam_val in lambdas
-            accs = Float64[]
-            for fold_idx in 1:nfolds
-                val_indices = folds[fold_idx]
-                train_indices = vcat(folds[setdiff(1:nfolds, fold_idx)]...)
+    for k0_val in k0_range
+        for c_val in Cs
+            for lam_val in lambdas
+                accs = Float64[]
+                for fold_idx in 1:nfolds
+                    val_indices = folds[fold_idx]
+                    train_indices = vcat(folds[setdiff(1:nfolds, fold_idx)]...)
 
-                X_tr = X[train_indices, :]
-                y_tr = y[train_indices]
-                X_val = X[val_indices, :]
-                y_val = y[val_indices]
+                    X_tr = X[train_indices, :]
+                    y_tr = y[train_indices]
+                    X_val = X[val_indices, :]
+                    y_val = y[val_indices]
 
-                # Compute kernels for train/val
-                K_list_train = compute_kernels(X_tr, X_tr, kernels)
-                K_list_val   = compute_kernels(X_tr, X_val, kernels)
+                    # Compute kernels for train/val
+                    K_list_train = compute_kernels(X_tr, X_tr, kernels)
+                    K_list_val   = compute_kernels(X_tr, X_val, kernels)
 
-                α_tmp, β_tmp, K_comb_tmp, _, _ = train_interpretable_mkl(
-                    X_tr, y_tr, c_val, K_list_train, lam_val;
-                    max_iter=max_iter,
-                    tolerance=tolerance,
-                    k0=k0,
-                    sum_beta_val=sum_beta_val,
-                    solver_type=:LIBSVM,
-                    beta_method=:gssp
-                )
-                b_tmp = compute_bias(α_tmp, y_tr, K_comb_tmp, c_val)
+                    α_tmp, β_tmp, K_comb_tmp, _, _ = train_interpretable_mkl(
+                        X_tr, y_tr, c_val, K_list_train, lam_val;
+                        max_iter=max_iter,
+                        tolerance=tolerance,
+                        k0=k0_val,
+                        sum_beta_val=sum_beta_val,
+                        solver_type=:LIBSVM,
+                        beta_method=:gssp
+                    )
+                    b_tmp = compute_bias(α_tmp, y_tr, K_comb_tmp, c_val)
 
-                y_pred_val = predict_mkl(
-                    α_tmp, y_tr, X_tr, X_val, β_tmp, b_tmp,
-                    K_list_val, kernel_type="precomputed";
-                    tolerance=tolerance
-                )
+                    y_pred_val = predict_mkl(
+                        α_tmp, y_tr, X_tr, X_val, β_tmp, b_tmp,
+                        K_list_val, kernel_type="precomputed";
+                        tolerance=tolerance
+                    )
 
-                fold_acc, _, _, _ = compute_metrics(y_val, y_pred_val)
-                push!(accs, fold_acc)
-            end
-            mean_acc = mean(accs)
-            if mean_acc > best_acc
-                best_acc = mean_acc
-                best_C   = c_val
-                best_lam = lam_val
+                    fold_acc, _, _, _ = compute_metrics(y_val, y_pred_val)
+                    push!(accs, fold_acc)
+                end
+                mean_acc = mean(accs)
+                if mean_acc > best_acc
+                    best_acc = mean_acc
+                    best_C   = c_val
+                    best_lam = lam_val
+                    best_k0  = k0_val
+                end
             end
         end
     end
-    return best_C, best_lam, best_acc
+    return best_C, best_lam, best_k0, best_acc
 end
 
 ################################################################################
@@ -280,18 +294,18 @@ for dataset in DATASETS
     train_size = length(y_train)
     test_size  = length(y_test)
 
-    # 1) Tune MKL hyperparams
-    best_C_mkl, best_lam_mkl, best_cv_acc_mkl = cross_validate_mkl(
+    # 1) Tune MKL hyperparams (C, λ, k0)
+    best_C_mkl, best_lam_mkl, best_k0_mkl, best_cv_acc_mkl = cross_validate_mkl(
         X_train, y_train, kernels;
         Cs=Cs_range,
         lambdas=lambdas_range,
-        k0=k0,
+        k0_range=k0_range,  # Our new range
         max_iter=max_iter,
         sum_beta_val=sum_beta_val,
         tolerance=tolerance,
         nfolds=N_FOLDS
     )
-    println("  [MKL] Best (C, λ) = ($best_C_mkl, $best_lam_mkl); avg val acc = $(round(best_cv_acc_mkl, digits=4))")
+    println("  [MKL] Best (C, λ, k0) = ($best_C_mkl, $best_lam_mkl, $best_k0_mkl); avg val acc = $(round(best_cv_acc_mkl, digits=4))")
 
     # 2) Retrain MKL on entire training set, measuring runtime
     K_list_train = compute_kernels(X_train, X_train, kernels)
@@ -302,7 +316,7 @@ for dataset in DATASETS
         X_train, y_train, best_C_mkl, K_list_train, best_lam_mkl;
         max_iter=max_iter,
         tolerance=tolerance,
-        k0=k0,
+        k0=best_k0_mkl,         # Use the best k0
         sum_beta_val=sum_beta_val,
         solver_type=:LIBSVM,
         beta_method=:gssp
@@ -357,7 +371,7 @@ for dataset in DATASETS
     y_pred_test_svm, _ = svmpredict(svm_model, X_test')
     SVM_TestAccuracy, SVM_Precision, SVM_Recall, SVM_F1_Score = compute_metrics(y_test, y_pred_test_svm)
 
-    # 5) Store results (adding best C/λ + final fit time for MKL)
+    # 5) Store results (adding best C/λ/k0 + final fit time for MKL)
     betas_str = join(round.(β, digits=4), ", ")
 
     push!(results, (
@@ -383,9 +397,10 @@ for dataset in DATASETS
         SVM_F1_Score,
 
         betas_str,
-        best_C_mkl,        # new column: best C for MKL
-        best_lam_mkl,      # new column: best λ for MKL
-        fit_time_mkl,      # new column: final MKL fit time
+        best_k0_mkl,        # best k0 for MK
+        best_C_mkl,        # best C for MKL
+        best_lam_mkl,      # best λ for MKL
+        fit_time_mkl,      # final MKL fit time
 
         "Success"
     ))
