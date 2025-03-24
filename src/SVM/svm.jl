@@ -7,7 +7,6 @@ module SVM
     JuMP,
     Gurobi,
     StatsBase,
-    Plots,
     Infiltrator,
     Debugger,
     Revise

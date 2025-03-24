@@ -6,7 +6,6 @@ module InterpretableMKL
         Statistics,
         Random,
         StatsBase,
-        Plots,
         Infiltrator,
         Debugger,
         Revise

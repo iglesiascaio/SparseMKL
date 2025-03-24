@@ -8,7 +8,6 @@ module MKL
         JuMP,
         Gurobi,
         StatsBase,
-        Plots,
         Infiltrator,
         Debugger,
         Revise
