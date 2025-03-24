@@ -6,7 +6,6 @@ using CSV,
       Statistics,
       Random,
       StatsBase,
-      Plots,
       Infiltrator,
       Debugger,
       Revise,
@@ -584,6 +583,8 @@ function train_interpretable_mkl(
     random_indices = randperm(q)[1:k0]  # Select 3 random kernel indices
     β = zeros(q)
     β[random_indices] .= 1/k0  # Assign equal weight to 3 kernels
+    # β = [0.07228393862376302, 7.969859731466207e-10, 8.390774629174258e-10, 1.0202292916443687e-9, 0.340126634266021, 0.25248513918390975, 2.1727240655417493e-9, 1.5156465812502918e-10, 6.512964561245732e-11, 0.3351042797050995]
+    # β = [0.33359611258218547, 8.93633615505615e-9, 9.797214155860253e-9, 2.3313585948950423e-8, 0.3315199353513373, 2.5177556267267014e-6, 1.1281517432723913e-8, 9.651763226462254e-9, 8.970865439880895e-9, 0.3348813615375034]
     β_old = copy(β)
 
     println("Initial random β = ", β)
@@ -682,13 +683,13 @@ function train_interpretable_mkl(
             println("Returning the best solution found so far.")
             println("Final β = ", β_old)
             println("Final objective = ", obj_best)
-            return α_old, β_old, K_combined_old, list_alphas, list_betas
+            return α_old, β_old, K_combined_old, obj_best, list_alphas, list_betas
         end
 
         push!(list_alphas, copy(α))
         push!(list_betas,  copy(β))
     end
 
-    return α, β, K_combined, list_alphas, list_betas
+    return α, β, K_combined, obj, list_alphas, list_betas
 end
 end # module InterpretableMKL
