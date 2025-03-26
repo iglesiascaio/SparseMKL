@@ -22,26 +22,63 @@ include("../data/get_data.jl")
 using .GetData: get_dataset
 
 include("../src/MKL/multi_kernel.jl")
-include("../src/MKL/plot_mkl.jl")
 using .MKL: compute_kernels, train_mkl, compute_bias, predict_mkl, compute_combined_kernel
 
+# -------------------------------------------------------------------------
+# NEW: We'll re-include or ensure we see the updated train_interpretable_mkl
+#      with warm_start arguments (see the second code section below).
+# -------------------------------------------------------------------------
 include("../src/Interpretable_MKL/interpretable_multi_kernel.jl")
 using .InterpretableMKL: train_interpretable_mkl
+
+################################################################################
+# NEW: Option to skip cross-validation and warm-start from a CSV
+################################################################################
+const warm_start = false   # Set to `true` to skip CV & use precomputed (C, λ, k0, Betas)
+const warm_params_csv = "hyper_param_lower_bound_results.csv"
+
+cross_validation = true   # Set to `true` to perform CV for MKL hyperparams
+
+# We'll load that CSV to pick the best hyper-params for each dataset
+const warm_df = CSV.read(warm_params_csv, DataFrame)
+
+# Helper to parse Betas string: e.g. "0.333, 0.0, 0.667" -> [0.333, 0.0, 0.667]
+function parse_betas_str(betas_str::AbstractString)
+    parts = split(betas_str, ",")
+    return parse.(Float64, strip.(parts))
+end
+
+# We want "soc2random" for spambase, else "soc3"
+function get_warm_params_for_dataset(dset::Symbol)
+    method_needed = (dset == :spambase) ? "soc2random" : "soc3"
+    subset = filter(row ->
+        row.dataset == string(dset) && row.method == method_needed,
+        warm_df
+    )
+    if nrow(subset) == 0
+        error("No warm-start entry for dataset=$dset, method=$method_needed in CSV $warm_params_csv.")
+    end
+    bestC      = subset.bestC[1]
+    bestLambda = subset.bestLambda[1]
+    bestK      = subset.bestK[1]
+    betas_vec  = parse_betas_str(subset.Betas[1])
+    return bestC, bestLambda, bestK, betas_vec
+end
 
 ################################################################################
 # Data / Datasets
 ################################################################################
 DATASETS = [
-    :iris, 
+    # :iris, 
     # :adult,
-    :wine, 
-    :breastcancer,
-    :ionosphere,
-    :spambase,
-    :banknote,
-    :heart,
-    :haberman,
-    :mammographic,
+    # :wine, 
+    # :breastcancer,
+    # :ionosphere,
+    # :spambase,
+    # :banknote,
+    # :heart,
+    # :haberman,
+    # :mammographic,
     :parkinsons,
 ]
 
@@ -62,17 +99,15 @@ kernels = [
 ]
 
 ################################################################################
-# Hyperparameters to search
-# For MKL, we do a grid over (C, λ) and now k0.
-# For SVM, we do a grid over (C).
+# Hyperparameters to search (for normal CV if warm_start=false)
 ################################################################################
 Cs_range = [5.0, 10.0, 50.0, 100.0,]
 k0_range = [1, 2, 3, 4, 5,] 
 lambdas_range = [0.01, 0.1, 1.0, 10.0, 100.0]
 
-# Cs_range = [5.0]
+# Cs_range = [100.0]
 # k0_range = [4]
-# lambdas_range = [100.0]
+# lambdas_range = [0.1]
 
 
 # Additional MKL hyperparameters
@@ -83,6 +118,7 @@ tolerance = 1e-2
 
 # Cross-validation folds
 N_FOLDS = 10
+# N_FOLDS = 5
 
 ################################################################################
 # DataFrame to store results
@@ -97,6 +133,7 @@ results = DataFrame(
     MKL_Precision        = Float64[],
     MKL_Recall           = Float64[],
     MKL_F1_Score         = Float64[],
+    MKL_Objective        = Float64[],
 
     Baseline_Accuracy    = Float64[],
     Baseline_Precision   = Float64[],
@@ -110,7 +147,7 @@ results = DataFrame(
     SVM_F1_Score         = Float64[],
 
     Betas                = String[],
-    MKL_BestK0           = Int[],     # NEW
+    MKL_BestK0           = Int[],
     MKL_BestC            = Float64[],
     MKL_BestLambda       = Float64[],
     MKL_FitTime          = Float64[],
@@ -151,17 +188,18 @@ function kfold_indices(n::Int, k::Int=5; shuffle::Bool=true)
 end
 
 ################################################################################
-# Cross-validation for the MKL approach
-# Now includes a loop over k0 in [1, 2, 3, 4, 5].
+# Cross-validation for the MKL approach (used only if warm_start=false)
 ################################################################################
 function cross_validate_mkl(X, y, kernels;
                             Cs = Cs_range,
                             lambdas = lambdas_range,
-                            k0_range = [1, 2, 3, 4, 5],  # NEW
+                            k0_range = [1, 2, 3, 4, 5],
                             max_iter=50,
                             sum_beta_val=1.0,
                             tolerance=1e-2,
-                            nfolds=5)
+                            nfolds=5,
+                            warm_start_beta=nothing
+                            )
 
     n = size(X, 1)
     folds = kfold_indices(n, nfolds)
@@ -187,14 +225,16 @@ function cross_validate_mkl(X, y, kernels;
                     K_list_train = compute_kernels(X_tr, X_tr, kernels)
                     K_list_val   = compute_kernels(X_tr, X_val, kernels)
 
-                    α_tmp, β_tmp, K_comb_tmp, _, _ = train_interpretable_mkl(
+
+                    α_tmp, β_tmp, K_comb_tmp, _, _, _ = train_interpretable_mkl(
                         X_tr, y_tr, c_val, K_list_train, lam_val;
                         max_iter=max_iter,
                         tolerance=tolerance,
                         k0=k0_val,
                         sum_beta_val=sum_beta_val,
                         solver_type=:LIBSVM,
-                        beta_method=:gssp
+                        beta_method=:gssp,
+                        warm_start_beta=warm_start_beta
                     )
                     b_tmp = compute_bias(α_tmp, y_tr, K_comb_tmp, c_val)
 
@@ -221,7 +261,7 @@ function cross_validate_mkl(X, y, kernels;
 end
 
 ################################################################################
-# Cross-validation for vanilla SVM (Polynomial kernel)
+# Cross-validation for vanilla SVM (Linear kernel here)
 ################################################################################
 function cross_validate_svm(X, y; Cs=Cs_range, kernel=Kernel.Linear, nfolds=5)
     n = size(X, 1)
@@ -240,11 +280,6 @@ function cross_validate_svm(X, y; Cs=Cs_range, kernel=Kernel.Linear, nfolds=5)
             X_val = X[val_indices, :]
             y_val = y[val_indices]
 
-            println("X_train shape: ", size(X_tr))
-            println("y_train length: ", length(y_tr))
-            println("X_test shape: ", size(X_val))
-            println("y_test length: ", length(y_val))
-
             svm_model = svmtrain(
                 X_tr', Float64.(y_tr);
                 svmtype = LIBSVM.SVC,
@@ -252,11 +287,7 @@ function cross_validate_svm(X, y; Cs=Cs_range, kernel=Kernel.Linear, nfolds=5)
                 cost    = c_val
             )
 
-            println(size(X_val'))
-            println(size(X_tr'))
             y_pred_val, _ = svmpredict(svm_model, X_val')
-            println((y_pred_val))
-            println((y_val))
             fold_acc, _, _, _ = compute_metrics(y_val, y_pred_val)
             push!(accs, fold_acc)
         end
@@ -279,7 +310,6 @@ for dataset in DATASETS
     frac = dataset == :adult ? 0.33 : 1.00
     X_train, y_train, X_test, y_test = get_dataset(dataset; force_download=false, frac=frac, train_ratio=0.8)
 
-    # Possibly X comes as (#features, #samples). LIBSVM wants (#samples, #features).
     if size(X_train,1) != length(y_train) && size(X_train,2) == length(y_train)
         X_train = X_train'
     end
@@ -294,34 +324,60 @@ for dataset in DATASETS
     train_size = length(y_train)
     test_size  = length(y_test)
 
-    # 1) Tune MKL hyperparams (C, λ, k0)
-    best_C_mkl, best_lam_mkl, best_k0_mkl, best_cv_acc_mkl = cross_validate_mkl(
-        X_train, y_train, kernels;
-        Cs=Cs_range,
-        lambdas=lambdas_range,
-        k0_range=k0_range,  # Our new range
-        max_iter=max_iter,
-        sum_beta_val=sum_beta_val,
-        tolerance=tolerance,
-        nfolds=N_FOLDS
-    )
-    println("  [MKL] Best (C, λ, k0) = ($best_C_mkl, $best_lam_mkl, $best_k0_mkl); avg val acc = $(round(best_cv_acc_mkl, digits=4))")
+    # -----------------------------------------------------------
+    # 1) Decide how to get MKL hyperparams (C, λ, k0)
+    # -----------------------------------------------------------
+    if warm_start && !cross_validation
+        # Skip cross-validation; read from CSV
+        best_C_mkl, best_lam_mkl, best_k0_mkl, warm_betas = get_warm_params_for_dataset(dataset)
+        println("  [MKL-WarmStart] Using (C, λ, k0) = ($best_C_mkl, $best_lam_mkl, $best_k0_mkl).")
+    elseif warm_start && cross_validation
+        _, _, _, warm_betas = get_warm_params_for_dataset(dataset)
+
+        best_C_mkl, best_lam_mkl, best_k0_mkl, best_cv_acc_mkl = cross_validate_mkl(
+            X_train, y_train, kernels;
+            Cs=Cs_range,
+            lambdas=lambdas_range,
+            k0_range=k0_range,
+            max_iter=max_iter,
+            sum_beta_val=sum_beta_val,
+            tolerance=tolerance,
+            nfolds=N_FOLDS,
+            warm_start_beta=warm_betas
+        )
+        println("  [MKL-WarmStart] Best (C, λ, k0) = ($best_C_mkl, $best_lam_mkl, $best_k0_mkl); avg val acc = $(round(best_cv_acc_mkl, digits=4))")
+    else
+        # Do normal cross-validation
+        best_C_mkl, best_lam_mkl, best_k0_mkl, best_cv_acc_mkl = cross_validate_mkl(
+            X_train, y_train, kernels;
+            Cs=Cs_range,
+            lambdas=lambdas_range,
+            k0_range=k0_range,
+            max_iter=max_iter,
+            sum_beta_val=sum_beta_val,
+            tolerance=tolerance,
+            nfolds=N_FOLDS
+        )
+        println("  [MKL] Best (C, λ, k0) = ($best_C_mkl, $best_lam_mkl, $best_k0_mkl); avg val acc = $(round(best_cv_acc_mkl, digits=4))")
+        warm_betas = nothing
+    end
 
     # 2) Retrain MKL on entire training set, measuring runtime
     K_list_train = compute_kernels(X_train, X_train, kernels)
     K_list_test  = compute_kernels(X_train, X_test,  kernels)
 
-    t0 = time()  # record time before final MKL fit
-    α, β, K_combined, _, _ = train_interpretable_mkl(
+    t0 = time()
+    α, β, K_combined, obj, _, _ = train_interpretable_mkl(
         X_train, y_train, best_C_mkl, K_list_train, best_lam_mkl;
         max_iter=max_iter,
         tolerance=tolerance,
-        k0=best_k0_mkl,         # Use the best k0
+        k0=best_k0_mkl,
         sum_beta_val=sum_beta_val,
         solver_type=:LIBSVM,
-        beta_method=:gssp
+        beta_method=:gssp,
+        warm_start_beta=(warm_start ? warm_betas : nothing)  # NEW
     )
-    fit_time_mkl = time() - t0  # measure final fit time
+    fit_time_mkl = time() - t0
 
     b = compute_bias(α, y_train, K_combined, best_C_mkl)
 
@@ -340,13 +396,15 @@ for dataset in DATASETS
         tolerance=tolerance
     )
     MKL_TestAccuracy, MKL_Precision, MKL_Recall, MKL_F1_Score = compute_metrics(y_test, y_pred_test_mkl)
+    MKL_Objective = obj
 
     # 3) Baseline: majority vote
     majority_label = (sum(y_train .== 1) >= sum(y_train .== -1)) ? 1.0 : -1.0
     y_pred_baseline_test = fill(majority_label, length(y_test))
-    Baseline_Accuracy, Baseline_Precision, Baseline_Recall, Baseline_F1_Score = compute_metrics(y_test, y_pred_baseline_test)
+    Baseline_Accuracy, Baseline_Precision, Baseline_Recall, Baseline_F1_Score =
+        compute_metrics(y_test, y_pred_baseline_test)
 
-    # 4) Vanilla SVM baseline cross-validation
+    # 4) Vanilla SVM baseline cross-validation (unchanged)
     best_C_svm, best_cv_acc_svm = cross_validate_svm(
         X_train, y_train; 
         Cs=Cs_range,
@@ -355,7 +413,6 @@ for dataset in DATASETS
     )
     println("  [SVM] Best C = $best_C_svm; avg val acc = $(round(best_cv_acc_svm, digits=4))")
 
-    # Retrain SVM on entire training set with the polynomial kernel
     svm_model = svmtrain(
         X_train', Float64.(y_train); 
         svmtype = LIBSVM.SVC, 
@@ -363,15 +420,13 @@ for dataset in DATASETS
         cost    = best_C_svm
     )
 
-    # Evaluate SVM on training
     y_pred_train_svm, _ = svmpredict(svm_model, X_train')
     SVM_TrainAccuracy, _, _, _ = compute_metrics(y_train, y_pred_train_svm)
 
-    # Evaluate SVM on test
     y_pred_test_svm, _ = svmpredict(svm_model, X_test')
     SVM_TestAccuracy, SVM_Precision, SVM_Recall, SVM_F1_Score = compute_metrics(y_test, y_pred_test_svm)
 
-    # 5) Store results (adding best C/λ/k0 + final fit time for MKL)
+    # 5) Store results
     betas_str = join(round.(β, digits=4), ", ")
 
     push!(results, (
@@ -384,6 +439,7 @@ for dataset in DATASETS
         MKL_Precision,
         MKL_Recall,
         MKL_F1_Score,
+        MKL_Objective,
 
         Baseline_Accuracy,
         Baseline_Precision,
@@ -397,11 +453,10 @@ for dataset in DATASETS
         SVM_F1_Score,
 
         betas_str,
-        best_k0_mkl,        # best k0 for MK
-        best_C_mkl,        # best C for MKL
-        best_lam_mkl,      # best λ for MKL
-        fit_time_mkl,      # final MKL fit time
-
+        best_k0_mkl,
+        best_C_mkl,
+        best_lam_mkl,
+        fit_time_mkl,
         "Success"
     ))
 end
@@ -410,7 +465,7 @@ end
 # Save and display results
 ################################################################################
 println("Start writing results to CSV file")
-CSV.write("results.csv", results)  # Save results to a CSV file
+CSV.write("results.csv", results)
 println("Results written to results.csv")
 
 # Filter successful datasets
@@ -421,4 +476,4 @@ println(successful_results)
 # Print datasets that encountered errors
 failed_datasets = filter(row -> row.Status == "Error", results)
 println("\n=== Datasets with Errors ===")
-println(failed_datasets.Dataset)  # Print only the dataset names
+println(failed_datasets.Dataset)
