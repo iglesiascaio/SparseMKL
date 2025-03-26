@@ -429,43 +429,58 @@ end
 
 ############### 6) Main driver ###############
 function main()
-    # Just test one dataset for demonstration
+    # Read the CSV with the best parameters from previous runs
+    best_params = CSV.read("results.csv", DataFrame)
+    
+    # List of datasets to run relaxations on
     datasets = [
-        :iris, 
-        # :adult,
-        :wine, 
-        :breastcancer,
-        :ionosphere,
-        :spambase,
-        :banknote,
-        :heart,
-        :haberman,
-        :mammographic,
+        # :iris, 
+        # :wine, 
+        # :breastcancer,
+        # :ionosphere,
+        # :spambase,
+        # :banknote,
+        # :heart,
+        # :haberman,
+        # :mammographic,
         :parkinsons,
     ]
-
+    
+    # Methods to run
     methods = [
         :perspective,
-        :soc1,
-        :soc2random,
-        :soc3,
-        :soc4
+        # :soc1,
+        # :soc2random,
+        # :soc3,
+        # :soc4
     ]
-
-    C = 5.0
-    λ = 100.0
-    k = 3
-    L = 1000   # number of random vectors for soc2random
-
+    
     results = DataFrame(
         dataset = String[],
         method = String[],
+        bestC = Float64[],
+        bestLambda = Float64[],
+        bestK = Int[],
         objective_value = Float64[],
+        Betas = String[],
         runtime = Float64[]
     )
-
+    
     for dset in datasets
         println("\n=== DATASET: $dset ===")
+        # Look up best parameters for the current dataset from results.csv.
+        # We assume the "Dataset" column in results.csv contains the dataset name as a string.
+        rows = filter(r -> r.Dataset == string(dset) && r.Status == "Success", best_params)
+        if nrow(rows) == 0
+            println("No successful best parameters found for dataset $dset. Skipping.")
+            continue
+        end
+        bestC     = rows.MKL_BestC[1]
+        bestLambda= rows.MKL_BestLambda[1]
+        bestK     = Int(rows.MKL_BestK0[1])  # Ensure bestK is an integer
+        println("Best parameters for $dset: C = $bestC, lambda = $bestLambda, k = $bestK")
+    
+        # Load dataset
         X_train, y_train, X_test, y_test = get_dataset(dset; force_download=false, frac=1.0, train_ratio=0.8)
         if size(X_train,1) != length(y_train)
             X_train = X_train'
@@ -491,23 +506,34 @@ function main()
         K_list_train = compute_kernels(X_train, X_train, kernel_specs)
     
         for meth in methods
-            println("  >> Solving with method: $meth")
+            println("  >> Solving with method: $meth using best parameters for $dset")
+
+            if dset == :spambase && meth == :soc3
+                println("Skipping soc3 for spambase due to numerical issues.")
+                continue
+            end
     
             t0 = time()
             obj_val = nothing
             β_star = nothing
             try
-                obj_val, β_star = solve_mkl_lower_bound(meth, K_list_train, y_train, C, λ, k;
-                                                    sum_beta_val=true, L=L)
+                obj_val, β_star = solve_mkl_lower_bound(meth, K_list_train, y_train, bestC, bestLambda, bestK;
+                                                    sum_beta_val=true, L=1000)
                 runtime = time() - t0
                 println("     objective = ", obj_val)
                 println("     β* = ", β_star)
                 println("     runtime = ", runtime)
+
+                betas_str = join(round.(β_star, digits=4), ", ")
     
                 push!(results, (
                     string(dset),
                     string(meth),
+                    bestC,
+                    bestLambda,
+                    bestK,
                     obj_val,
+                    betas_str,
                     runtime
                 ))
             catch e
@@ -516,6 +542,10 @@ function main()
                 push!(results, (
                     string(dset),
                     string(meth),
+                    bestC,
+                    bestLambda,
+                    bestK,
+                    NaN,
                     NaN,
                     runtime
                 ))
@@ -523,9 +553,8 @@ function main()
         end
     end
     
-
-    CSV.write("lower_bound_results.csv", results)
-    println("\nAll done. Results stored in `mkl_results.csv`.")
+    CSV.write("parkinsons_hyper_param_lower_bound_results.csv", results)
+    println("\nAll done. Results stored in `lower_bound_results.csv`.")
 end
 
 end # module
