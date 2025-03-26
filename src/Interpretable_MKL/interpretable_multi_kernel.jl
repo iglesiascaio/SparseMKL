@@ -570,21 +570,33 @@ function train_interpretable_mkl(
     sum_beta_val::Float64=1.0,
     solver_type::Symbol=:SMO,
     beta_method::Symbol=:gssp,
-    max_non_decrease::Int=3
+    max_non_decrease::Int=3,               
+    warm_start_beta::Union{Nothing,Vector{Float64}}=nothing  
 )
     @assert !isempty(K_list) "Empty kernel list!"
     n = size(X,1)
     q = length(K_list)
 
     ###################################################################
-    # Step 1: Initialize β as a linear combination of three random kernels
+    # Step 1: Initialize β 
     ###################################################################
-    Random.seed!(10)
-    random_indices = randperm(q)[1:k0]  # Select 3 random kernel indices
-    β = zeros(q)
-    β[random_indices] .= 1/k0  # Assign equal weight to 3 kernels
-    # β = [0.07228393862376302, 7.969859731466207e-10, 8.390774629174258e-10, 1.0202292916443687e-9, 0.340126634266021, 0.25248513918390975, 2.1727240655417493e-9, 1.5156465812502918e-10, 6.512964561245732e-11, 0.3351042797050995]
-    # β = [0.33359611258218547, 8.93633615505615e-9, 9.797214155860253e-9, 2.3313585948950423e-8, 0.3315199353513373, 2.5177556267267014e-6, 1.1281517432723913e-8, 9.651763226462254e-9, 8.970865439880895e-9, 0.3348813615375034]
+    if warm_start_beta !== nothing
+        # If warm_start=true, use the warm_start_beta from the CSV
+        @assert length(warm_start_beta) == q "Length of warm_start_beta must match number of kernels."
+        β = copy(warm_start_beta)
+        println("Warm-starting β = ", β)
+    else
+        # Otherwise: do the usual random initialization of k0 kernels
+        Random.seed!(10)
+        random_indices = randperm(q)[1:k0]
+        β = zeros(q)
+        β[random_indices] .= 1/k0
+        # β .= 1/q
+        # β = [0.2894428253200304, 4.3081291912388663e-8, 4.6831647040780195e-9, 3.3932201027612757e-9, 3.3996252539558973e-7, 1.343775308951902e-8, 1.5405665333576783e-8, 7.229556020504888e-9, 2.759929394516432e-8, 0.7105567185341862]
+        # β = [0.12060103801197196, 1.147515498057838e-9, 1.2335501991638722e-9, 1.6449589181415578e-9, 0.28132705968545924, 0.25991259319363547, 0.06177128762071514, -7.041762269423215e-11, -2.855297366607985e-10, 0.27638801612367375]
+        println("Initial random β = ", β)
+    end
+
     β_old = copy(β)
 
     println("Initial random β = ", β)
