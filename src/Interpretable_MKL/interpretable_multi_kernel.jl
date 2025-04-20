@@ -18,6 +18,9 @@ include("./gssp.jl")              # GSSP algorithm for β
 using .MKL: compute_combined_kernel
 using .GSSPAlgorithm: GSSP
 
+include("../Lower_Bound_models/lower_bound_formulations.jl")
+using .LowerBoundFormulations: solve_mkl_lower_bound
+
 
 """
     symmetrize!(K; tol=1e-10)
@@ -570,8 +573,10 @@ function train_interpretable_mkl(
     sum_beta_val::Float64=1.0,
     solver_type::Symbol=:SMO,
     beta_method::Symbol=:gssp,
-    max_non_decrease::Int=3,               
-    warm_start_beta::Union{Nothing,Vector{Float64}}=nothing  
+    max_non_decrease::Int=3,
+    warm_start::Bool=false,
+    warm_start_method::Union{Symbol,Nothing}=nothing,
+    warm_start_beta::Union{Nothing,Vector{Float64}}=nothing
 )
     @assert !isempty(K_list) "Empty kernel list!"
     n = size(X,1)
@@ -580,26 +585,38 @@ function train_interpretable_mkl(
     ###################################################################
     # Step 1: Initialize β 
     ###################################################################
-    if warm_start_beta !== nothing
-        # If warm_start=true, use the warm_start_beta from the CSV
-        @assert length(warm_start_beta) == q "Length of warm_start_beta must match number of kernels."
-        β = copy(warm_start_beta)
-        println("Warm-starting β = ", β)
+    if warm_start
+        if warm_start_beta !== nothing
+            # (A) Warm Start from user-provided betas (e.g. CSV)
+            @assert length(warm_start_beta) == q "Length of warm_start_beta must match number of kernels."
+            β = copy(warm_start_beta)
+            println("Warm-starting β from provided array = ", β)
+        else
+            # (B) Dynamic Warm Start: call solve_mkl_lower_bound
+            println("Dynamic warm start: calling solve_mkl_lower_bound with method=$(warm_start_method).")
+            obj_val, dynamic_beta = solve_mkl_lower_bound(
+                warm_start_method,
+                K_list,
+                y,
+                C,
+                λ,
+                k0;  # we pass k0 to handle cardinality constraints
+                sum_beta_val = (sum_beta_val != 0.0),
+                L = 1000      # L for random-sampling methods
+            )
+            β = copy(dynamic_beta)
+            println("Dynamically computed warm-start β = ", β, " (objective was ", obj_val, ")")
+        end
     else
-        # Otherwise: do the usual random initialization of k0 kernels
+        # (C) No Warm Start: do the usual random initialization
         Random.seed!(10)
         random_indices = randperm(q)[1:k0]
         β = zeros(q)
         β[random_indices] .= 1/k0
-        # β .= 1/q
-        # β = [0.2894428253200304, 4.3081291912388663e-8, 4.6831647040780195e-9, 3.3932201027612757e-9, 3.3996252539558973e-7, 1.343775308951902e-8, 1.5405665333576783e-8, 7.229556020504888e-9, 2.759929394516432e-8, 0.7105567185341862]
-        # β = [0.12060103801197196, 1.147515498057838e-9, 1.2335501991638722e-9, 1.6449589181415578e-9, 0.28132705968545924, 0.25991259319363547, 0.06177128762071514, -7.041762269423215e-11, -2.855297366607985e-10, 0.27638801612367375]
-        println("Initial random β = ", β)
+        println("No warm start selected; initial random β = ", β)
     end
 
     β_old = copy(β)
-
-    println("Initial random β = ", β)
 
     ###################################################################
     # Step 2: Compute the initial combined kernel using this β
@@ -704,4 +721,5 @@ function train_interpretable_mkl(
 
     return α, β, K_combined, obj, list_alphas, list_betas
 end
+
 end # module InterpretableMKL
