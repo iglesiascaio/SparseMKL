@@ -32,12 +32,13 @@ include("../src/Interpretable_MKL/interpretable_multi_kernel.jl")
 using .InterpretableMKL: train_interpretable_mkl
 
 ################################################################################
-# NEW: Option to skip cross-validation and warm-start from a CSV
+# Option to skip cross-validation and warm-start from a CSV
 ################################################################################
-const warm_start = false   # Set to `true` to skip CV & use precomputed (C, λ, k0, Betas)
-const warm_params_csv = "hyper_param_lower_bound_results.csv"
+const warm_start = true   # Set to `true` to skip CV & use precomputed (C, λ, k0, Betas)
+# const warm_params_csv = "../results/hyper_param_lower_bound_results.csv"
+const warm_params_csv = "../results/full_SDP_small_datasets.csv"
 
-cross_validation = true   # Set to `true` to perform CV for MKL hyperparams
+cross_validation = false   # Set to `true` to perform CV for MKL hyperparams
 
 # We'll load that CSV to pick the best hyper-params for each dataset
 const warm_df = CSV.read(warm_params_csv, DataFrame)
@@ -49,8 +50,9 @@ function parse_betas_str(betas_str::AbstractString)
 end
 
 # We want "soc2random" for spambase, else "soc3"
-function get_warm_params_for_dataset(dset::Symbol)
-    method_needed = (dset == :spambase) ? "soc2random" : "soc3"
+function get_warm_params_for_dataset(dset::Symbol, method::String="soc3")
+
+    method_needed = (dset == :spambase) ? "soc2random" : method
     subset = filter(row ->
         row.dataset == string(dset) && row.method == method_needed,
         warm_df
@@ -69,15 +71,15 @@ end
 # Data / Datasets
 ################################################################################
 DATASETS = [
-    # :iris, 
+    :iris, 
     # :adult,
-    # :wine, 
+    :wine, 
     # :breastcancer,
-    # :ionosphere,
+    :ionosphere,
     # :spambase,
     # :banknote,
-    # :heart,
-    # :haberman,
+    :heart,
+    :haberman,
     # :mammographic,
     :parkinsons,
 ]
@@ -198,7 +200,9 @@ function cross_validate_mkl(X, y, kernels;
                             sum_beta_val=1.0,
                             tolerance=1e-2,
                             nfolds=5,
-                            warm_start_beta=nothing
+                            warm_start_beta=nothing,
+                            warm_start=false,
+                            warm_start_method=nothing
                             )
 
     n = size(X, 1)
@@ -234,7 +238,9 @@ function cross_validate_mkl(X, y, kernels;
                         sum_beta_val=sum_beta_val,
                         solver_type=:LIBSVM,
                         beta_method=:gssp,
-                        warm_start_beta=warm_start_beta
+                        warm_start=warm_start,
+                        warm_start_beta=warm_start_beta,
+                        warm_start_method=warm_start_method
                     )
                     b_tmp = compute_bias(α_tmp, y_tr, K_comb_tmp, c_val)
 
@@ -329,7 +335,7 @@ for dataset in DATASETS
     # -----------------------------------------------------------
     if warm_start && !cross_validation
         # Skip cross-validation; read from CSV
-        best_C_mkl, best_lam_mkl, best_k0_mkl, warm_betas = get_warm_params_for_dataset(dataset)
+        best_C_mkl, best_lam_mkl, best_k0_mkl, warm_betas = get_warm_params_for_dataset(dataset, "perspective")
         println("  [MKL-WarmStart] Using (C, λ, k0) = ($best_C_mkl, $best_lam_mkl, $best_k0_mkl).")
     elseif warm_start && cross_validation
         _, _, _, warm_betas = get_warm_params_for_dataset(dataset)
@@ -343,6 +349,8 @@ for dataset in DATASETS
             sum_beta_val=sum_beta_val,
             tolerance=tolerance,
             nfolds=N_FOLDS,
+            warm_start=true,
+            # warm_start_method=:soc2random,
             warm_start_beta=warm_betas
         )
         println("  [MKL-WarmStart] Best (C, λ, k0) = ($best_C_mkl, $best_lam_mkl, $best_k0_mkl); avg val acc = $(round(best_cv_acc_mkl, digits=4))")
@@ -362,6 +370,9 @@ for dataset in DATASETS
         warm_betas = nothing
     end
 
+    flush(stdout)
+
+
     # 2) Retrain MKL on entire training set, measuring runtime
     K_list_train = compute_kernels(X_train, X_train, kernels)
     K_list_test  = compute_kernels(X_train, X_test,  kernels)
@@ -375,7 +386,10 @@ for dataset in DATASETS
         sum_beta_val=sum_beta_val,
         solver_type=:LIBSVM,
         beta_method=:gssp,
-        warm_start_beta=(warm_start ? warm_betas : nothing)  # NEW
+        warm_start=warm_start,
+        warm_start_beta=(warm_start ? warm_betas : nothing) 
+        # warm_start_method=:soc3,
+        # warm_start_beta=nothing
     )
     fit_time_mkl = time() - t0
 
@@ -465,7 +479,7 @@ end
 # Save and display results
 ################################################################################
 println("Start writing results to CSV file")
-CSV.write("results.csv", results)
+CSV.write("no_cross_val_warm_start_results.csv", results)
 println("Results written to results.csv")
 
 # Filter successful datasets
