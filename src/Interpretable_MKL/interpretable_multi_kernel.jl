@@ -611,6 +611,9 @@ function train_interpretable_mkl(
         β = zeros(q)
         β[random_indices] .= 1/k0
 
+        #TODO: take out, added for synthetic experiments
+        # β .= 1/q
+
         log("No warm start selected; initial random β = ", β)
     end
 
@@ -706,7 +709,7 @@ function train_interpretable_mkl(
         push!(list_betas,  copy(β))
     end
 
-    return α, β, K_combined, obj, list_alphas, list_betas
+    return α, β, K_combined, obj_best, list_alphas, list_betas
 end
 
 
