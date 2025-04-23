@@ -23,6 +23,7 @@ using .InterpretableMKL: train_interpretable_mkl
 
 # ------------------------ MASTER SEED & CONSTANTS -----------------------------
 const GLOBAL_SEED         = 42
+const RUN_CV = false          # ⇐ set to false to skip cross-validation
 Random.seed!(GLOBAL_SEED)
 
 const TRAIN_SIZES         = [50, 100, 200, 300, 400]
@@ -34,7 +35,7 @@ const TRUE_KERNELS        = 3
 const N_KERNELS_LIST      = [5, 6, 7, 8, 9, 10]
 const N_TRAIN_FIXED       = 400
 const NOISE_RATE          = 0.07
-const N_REPS              = 10
+const N_REPS              = 100
 
 const Cs_range            = [5.0, 10.0, 50.0, 100.0]
 const lambdas_range       = [0.01, 0.1, 1.0, 10.0, 100.0]
@@ -45,21 +46,32 @@ const TOL                 = 1e-2
 
 # ----------------------- UNIQUE KERNEL CATALOGUE ------------------------------
 const BASE_KERNEL_SPECS = [
+    # Linear
     Dict(:type => "linear",     :params => Dict()),
-    Dict(:type => "polynomial", :params => Dict(:degree => 2, :c => 1.0)),
+
+    # Polynomial kernels (degrees and offsets varied reasonably)
+    Dict(:type => "polynomial", :params => Dict(:degree => 2, :c => 0.0)),
     Dict(:type => "polynomial", :params => Dict(:degree => 3, :c => 1.0)),
-    Dict(:type => "polynomial", :params => Dict(:degree => 4, :c => 1.0)),
-    Dict(:type => "polynomial", :params => Dict(:degree => 5, :c => 1.0)),
+    Dict(:type => "polynomial", :params => Dict(:degree => 4, :c => 5.0)),
+    Dict(:type => "polynomial", :params => Dict(:degree => 5, :c => 10.0)),
+
+    # RBF kernels (gamma spanning local ↔ global)
+    Dict(:type => "rbf",        :params => Dict(:gamma  => 0.01)),
     Dict(:type => "rbf",        :params => Dict(:gamma  => 0.1)),
-    Dict(:type => "rbf",        :params => Dict(:gamma  => 0.3)),
-    Dict(:type => "rbf",        :params => Dict(:gamma  => 0.5)),
-    Dict(:type => "rbf",        :params => Dict(:gamma  => 0.7)),
-    Dict(:type => "laplacian",  :params => Dict(:gamma  => 0.1)),
-    Dict(:type => "laplacian",  :params => Dict(:gamma  => 0.3)),
+    Dict(:type => "rbf",        :params => Dict(:gamma  => 1.0)),
+    Dict(:type => "rbf",        :params => Dict(:gamma  => 10.0)),
+
+    # Laplacian kernels (similar span, L1 vs. L2)
+    Dict(:type => "laplacian",  :params => Dict(:gamma  => 0.01)),
     Dict(:type => "laplacian",  :params => Dict(:gamma  => 0.5)),
-    Dict(:type => "sigmoid",    :params => Dict(:gamma  => 0.5, :c0 => 1.0)),
-    Dict(:type => "sigmoid",    :params => Dict(:gamma  => 0.7, :c0 => 1.0)),
+    Dict(:type => "laplacian",  :params => Dict(:gamma  => 5.0)),
+
+    # Sigmoid kernels (vary both slope and bias moderately)
+    Dict(:type => "sigmoid",    :params => Dict(:gamma  => 0.01, :c0 => 0.0)),
+    Dict(:type => "sigmoid",    :params => Dict(:gamma  => 1.0,  :c0 => 1.0)),
 ]
+
+
 
 function make_unique_kernel_specs(rng::AbstractRNG, n_k::Int)
     if n_k > length(BASE_KERNEL_SPECS)
@@ -68,7 +80,9 @@ function make_unique_kernel_specs(rng::AbstractRNG, n_k::Int)
     return sample(rng, BASE_KERNEL_SPECS, n_k; replace = false)
 end
 
-dirichlet_vec(rng, k) = rand(rng, Dirichlet(fill(1.0, k)))
+
+
+dirichlet_vec(rng, k) = rand(rng, Dirichlet(fill(5.0, k)))
 
 # ------------------------ METRIC HELPERS --------------------------------------
 function compute_metrics(y, ŷ)
@@ -84,6 +98,11 @@ function compute_metrics(y, ŷ)
 end
 
 function support_metrics(β̂::Vector{Float64}, true_idx::Vector{Int}; tol=1e-3)
+    
+    println("β̂: ", β̂)
+    println("true_idx: ", true_idx)
+
+    # Compute support recovery metrics
     pred_idx = findall(abs.(β̂) .> tol)
     S_true   = Set(true_idx)
     S_pred   = Set(pred_idx)
@@ -99,36 +118,70 @@ end
 
 # ----------------------- SYNTHETIC DATA GENERATION ----------------------------
 function synthetic_dataset(
-    rng::AbstractRNG,
-    n_train::Int,
-    n_test::Int,
-    dim::Int,
-    kernels,
-    true_idx::Vector{Int},
-    β_true::Vector{Float64};
-    noise_rate::Float64 = 0.05
-)
-    X_train = randn(rng, n_train, dim)
-    X_test  = randn(rng, n_test,  dim)
-    K_tr = compute_kernels(X_train, X_train, kernels[true_idx])
-    K_te = compute_kernels(X_train, X_test,  kernels[true_idx])
-    Kc_train = zeros(n_train, n_train)
-    Kc_test  = zeros(n_train, n_test)
-    for (β, Kt, Ke) in zip(β_true, K_tr, K_te)
-        Kc_train .+= β .* Kt
-        Kc_test  .+= β .* Ke
+        rng::AbstractRNG,
+        n_train::Int,
+        n_test::Int,
+        dim::Int,
+        kernels,
+        true_idx::Vector{Int},
+        β_true::Vector{Float64};
+        noise_rate::Float64 = 0.05)
+
+
+    # ------------------------------------------------------------------
+    # 1. Draw ALL inputs first and split into plain Matrices
+    # ------------------------------------------------------------------
+    N       = n_train + n_test
+    X_all   = randn(rng, N, dim)
+    X_train = copy(view(X_all, 1:n_train,     :))
+    X_test  = copy(view(X_all, n_train+1:N,   :))
+
+    # ------------------------------------------------------------------
+    # 2. Build the combined Gram matrix for ALL samples
+    # ------------------------------------------------------------------
+    Kc     = zeros(N, N)
+    K_tt   = compute_kernels(X_train, X_train, kernels[true_idx])
+    K_tr   = compute_kernels(X_train, X_test,  kernels[true_idx])
+    K_rr   = compute_kernels(X_test,  X_test,  kernels[true_idx])
+
+    for (β, Ktt, Ktr, Krr) in zip(β_true, K_tt, K_tr, K_rr)
+        # train–train
+        Kc[1:n_train,     1:n_train]       .+= β .* Ktt
+        # train–test
+        Kc[1:n_train,     n_train+1:end]   .+= β .* Ktr
+        # test–train (transpose of train–test)
+        Kc[n_train+1:end, 1:n_train]       .+= β .* Ktr'
+        # test–test
+        Kc[n_train+1:end, n_train+1:end]   .+= β .* Krr
     end
-    α = randn(rng, n_train)
-    b = randn(rng)
-    f_train = Kc_train * α .+ b
-    f_test  = Kc_test' * α  .+ b
-    y_train = map(x -> x ≥ 0 ? 1.0 : -1.0, f_train)
-    y_test  = map(x -> x ≥ 0 ? 1.0 : -1.0, f_test)
+
+    # ------------------------------------------------------------------
+    # 3. Draw α for *all* N samples and a bias term b
+    # ------------------------------------------------------------------
+    α      = randn(rng, N)
+    b      = randn(rng)
+
+    # ------------------------------------------------------------------
+    # 4. Generate latent scores and labels
+    # ------------------------------------------------------------------
+    f      = Kc * α .+ b
+    y_all  = map(x -> x ≥ 0 ? 1.0 : -1.0, f)
+
+    # flip labels inside the TRAIN set only
     n_flip   = round(Int, noise_rate * n_train)
     flip_idx = randperm(rng, n_train)[1:n_flip]
-    y_train[flip_idx] .*= -1
+    y_all[flip_idx] .*= -1
+
+    # ------------------------------------------------------------------
+    # 5. Split outputs into plain Vectors
+    # ------------------------------------------------------------------
+    y_train = copy(view(y_all, 1:n_train))
+    y_test  = copy(view(y_all, n_train+1:N))
+
     return X_train, y_train, X_test, y_test
-end
+    end
+
+
 
 # ---------------------- CROSS‑VALIDATION UTILITIES ----------------------------
 function kfold_indices(n::Int, k::Int; rng = Random.GLOBAL_RNG)
@@ -262,6 +315,7 @@ for setting in (:vary_k, :vary_n)
         true_idx = sample(rng, 1:total_k, true_k; replace = false)
         β_true   = dirichlet_vec(rng, true_k)
 
+
         println("\n[", Dates.format(now(), "HH:MM:SS"), "] ",
                 setting == :vary_n ? "Vary n_samples" : "Vary n_kernels",
                 "  p=", p, "  rep=", rep)
@@ -274,8 +328,8 @@ for setting in (:vary_k, :vary_n)
         # --- fixed hyperparams ------------------------------------------------
         β, tr_acc, te_acc, fit_t = fit_mkl(
             Xtr, ytr, Xte, yte, kernels;
-            C  = 10.0,
-            λ  = 0.1,
+            C  = 1.0,
+            λ  = 10.0,
             k0 = true_k
         )
         sup_acc, tpr, tnr, ps = support_metrics(β, true_idx)
@@ -289,7 +343,11 @@ for setting in (:vary_k, :vary_n)
             sup_acc, tpr, tnr, ps, tr_acc, te_acc, fit_t
         ))
 
-        # --- cross‑validation -------------------------------------------------
+        # --- cross‑validation ------------------------------------------------
+        if !RUN_CV
+            println("  [cv]    SKIPPED")
+            continue
+        end
         Cstar, λstar, k0star, _ = cross_validate_mkl(Xtr, ytr, kernels)
         βcv, tr_acc, te_acc, fit_t = fit_mkl(
             Xtr, ytr, Xte, yte, kernels;
