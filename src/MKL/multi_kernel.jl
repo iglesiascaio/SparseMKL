@@ -398,7 +398,7 @@ module MKL
             K_combined_new = compute_combined_kernel(K_list_dynamic, β)
         end
 
-        println("K_combined_new dimensions: ", size(K_combined_new))
+        # println("K_combined_new dimensions: ", size(K_combined_new))
 
         # Use predict_svm to get final predictions
         return predict_svm(α_support, y_support, X_train[support_indices, :], X_new, b, kernel_type; K_combined=K_combined_new)
