@@ -8,6 +8,10 @@ from julia.api import Julia
 Julia(compiled_modules=False)  # ensures a “safe” load
 from julia import Main, Base
 
+import sys
+
+sys.stdout.reconfigure(line_buffering=True)
+
 # 2) Include your get_data.jl file (which defines the module GetData)
 Main.include("../data/get_data.jl")  # adjust path as needed
 
@@ -28,7 +32,7 @@ def get_julia_dataset(ds_name, frac=1.0, train_ratio=0.8, seed=123):
     ds_symbol = Base.Symbol(ds_name)  # Convert Python string -> Julia Symbol
 
     julia_tuple = Main.GetData.get_dataset(
-        ds_symbol, force_download=False, frac=0.33, train_ratio=0.8
+        ds_symbol, force_download=False, frac=frac, train_ratio=train_ratio
     )
 
     X_train_j, y_train_j, X_test_j, y_test_j = julia_tuple
@@ -165,10 +169,12 @@ lambdas_range = [
 
 
 def cross_validate_mkl(
-    X, y, kernel_specs, MKLClass, param_name=None, param_values=[None], n_folds=5
+    X, y, kernel_specs, MKLClass, param_name=None, param_values=[None], n_folds=10
 ):
     """
     For algorithms with a single hyperparam 'lam' or 'C', or none at all.
+    If a fold fails (raises), it’s skipped; if all folds for a given val fail,
+    we ignore that val entirely.
     """
     folds = kfold_indices(len(y), k=n_folds, shuffle=True, seed=123)
     best_acc = -999
@@ -176,31 +182,45 @@ def cross_validate_mkl(
 
     for val in param_values:
         fold_accuracies = []
+
         for fold_idx in range(n_folds):
-            val_idx = folds[fold_idx]
-            train_idx = np.hstack([folds[i] for i in range(n_folds) if i != fold_idx])
+            try:
+                # split
+                val_idx = folds[fold_idx]
+                train_idx = np.hstack(
+                    [folds[i] for i in range(n_folds) if i != fold_idx]
+                )
 
-            X_tr = X[train_idx]
-            y_tr = y[train_idx]
-            X_val = X[val_idx]
-            y_val = y[val_idx]
+                X_tr, y_tr = X[train_idx], y[train_idx]
+                X_val, y_val = X[val_idx], y[val_idx]
 
-            K_tr_list, K_val_list = compute_kernels(X_tr, X_val, kernel_specs)
+                # compute kernels
+                K_tr_list, K_val_list = compute_kernels(X_tr, X_val, kernel_specs)
 
-            if param_name is None or val is None:
-                mkl_model = MKLClass()
-            else:
-                if param_name == "lam":
-                    mkl_model = MKLClass(lam=val)
-                elif param_name == "C":
-                    mkl_model = MKLClass(C=val)
+                # instantiate
+                if param_name is None or val is None:
+                    mkl_model = MKLClass(max_iter=500, tolerance=1e-5)
                 else:
-                    raise ValueError(f"Unsupported param={param_name}")
+                    if param_name == "lam":
+                        mkl_model = MKLClass(lam=val, max_iter=500, tolerance=1e-5)
+                    elif param_name == "C":
+                        mkl_model = MKLClass(C=val, max_iter=500, tolerance=1e-5)
+                    else:
+                        raise ValueError(f"Unsupported param={param_name}")
 
-            mkl_model.fit(K_tr_list, y_tr.ravel())
-            y_val_pred = mkl_model.predict([K.T for K in K_val_list])
-            acc, _, _, _ = compute_metrics(y_val, y_val_pred)
-            fold_accuracies.append(acc)
+                # fit & eval
+                mkl_model.fit(K_tr_list, y_tr.ravel())
+                y_val_pred = mkl_model.predict([K.T for K in K_val_list])
+                acc, _, _, _ = compute_metrics(y_val, y_val_pred)
+                fold_accuracies.append(acc)
+
+            except Exception:
+                # skip this fold if anything goes wrong
+                continue
+
+        # if no folds succeeded for this val, skip it
+        if not fold_accuracies:
+            continue
 
         mean_acc = np.mean(fold_accuracies)
         if mean_acc > best_acc:
@@ -210,7 +230,7 @@ def cross_validate_mkl(
     return best_param, best_acc
 
 
-def cross_validate_svm(X, y, Cs=Cs_range, n_folds=5):
+def cross_validate_svm(X, y, Cs=Cs_range, n_folds=10):
     folds = kfold_indices(len(y), k=n_folds, shuffle=True, seed=123)
     best_acc = -999
     best_C = None
@@ -253,15 +273,15 @@ def majority_vote_baseline(y_train, y_test):
 DATASETS = [
     "iris",
     # "adult",
-    # "wine",
-    # "breastcancer",
-    # "ionosphere",
-    # "spambase",
-    # "banknote",
-    # "heart",
-    # "haberman",
-    # "mammographic",
-    # "parkinsons",
+    "wine",
+    "breastcancer",
+    "ionosphere",
+    "spambase",
+    "banknote",
+    "heart",
+    "haberman",
+    "mammographic",
+    "parkinsons",
 ]
 
 RESULT_COLUMNS = [
@@ -319,9 +339,7 @@ def run_experiment_for_dataset(ds_name):
     frac = 0.33 if ds_name == "adult" else 1.0
 
     # -- Call the Julia code to get the dataset
-    X_train, y_train, X_test, y_test = get_julia_dataset(
-        ds_name, frac=frac, train_ratio=0.8, seed=123
-    )
+    X_train, y_train, X_test, y_test = get_julia_dataset(ds_name, frac=frac, seed=123)
 
     train_size = len(y_train)
     test_size = len(y_test)
@@ -337,13 +355,13 @@ def run_experiment_for_dataset(ds_name):
         MKLClass=EasyMKL,
         param_name="lam",
         param_values=lambdas_range,
-        n_folds=5,
+        n_folds=10,
     )
     print(f"[EasyMKL] best lam={best_lam}, CV acc={best_cv_acc_easymkl:.4f}")
 
     # Measure final fit time
     start_time = time.time()
-    mkl1 = EasyMKL(lam=best_lam)
+    mkl1 = EasyMKL(lam=best_lam, max_iter=500, tolerance=1e-5)
     mkl1.fit(K_train_list, y_train.ravel())
     end_time = time.time()
     mkl1_train_time = end_time - start_time
@@ -371,13 +389,13 @@ def run_experiment_for_dataset(ds_name):
         MKLClass=AverageMKL,
         param_name=None,
         param_values=[None],
-        n_folds=5,
+        n_folds=10,
     )
     print(f"[AverageMKL] CV acc={best_cv_acc_avg:.4f}")
 
     # Measure final fit time
     start_time = time.time()
-    mkl2 = AverageMKL()
+    mkl2 = AverageMKL(max_iter=500, tolerance=1e-5)
     mkl2.fit(K_train_list, y_train.ravel())
     end_time = time.time()
     mkl2_train_time = end_time - start_time
@@ -405,13 +423,13 @@ def run_experiment_for_dataset(ds_name):
         MKLClass=CKA,
         param_name=None,
         param_values=[None],
-        n_folds=5,
+        n_folds=10,
     )
     print(f"[CKA] CV acc={best_cv_acc_cka:.4f}")
 
     # Measure final fit time
     start_time = time.time()
-    mkl3 = CKA()
+    mkl3 = CKA(max_iter=500, tolerance=1e-5)
     mkl3.fit(K_train_list, y_train)
     end_time = time.time()
     mkl3_train_time = end_time - start_time
@@ -439,7 +457,7 @@ def run_experiment_for_dataset(ds_name):
 
     # 5) SVM cross-validation
     best_C_svm, best_acc_svm = cross_validate_svm(
-        X_train, y_train, Cs=Cs_range, n_folds=5
+        X_train, y_train, Cs=Cs_range, n_folds=10
     )
     print(f"[SVM] best C={best_C_svm}, CV acc={best_acc_svm:.4f}")
 
@@ -518,7 +536,7 @@ def main():
 
     DATASETS = [
         "iris",
-        "adult",
+        # "adult",
         "wine",
         "breastcancer",
         "ionosphere",
