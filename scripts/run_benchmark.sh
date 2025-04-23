@@ -1,7 +1,9 @@
 #!/bin/bash
 
-#SBATCH --cpus-per-task=4            # Number of CPUs per task
-#SBATCH --mem=16G                    # Total memory per node
+#SBATCH --cpus-per-task=8            # Number of CPUs per task
+#SBATCH --mem=187G                    # Total memory per node
+
+
 
 # Loading the required module
 module load anaconda/Python-ML-2025a
