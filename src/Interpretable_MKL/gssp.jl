@@ -1,5 +1,3 @@
-    
-    
 module GSSPAlgorithm
     export GSSP
     ###############################################################################
@@ -26,7 +24,7 @@ module GSSPAlgorithm
     # 2)  P_{λ}^+(w): Euclidian projector onto { x ≥ 0, sum(x)=λ }
     #     Definition 2.2 in the paper
     ###############################################################################
-    function P_lambda_plus(w::Vector{Float64}, λ::Float64)
+    function P_lambda_plus(w::Vector{Float64}, λ::Float64; verbose::Bool=true)
         """
         P_{λ}^+(w) from Definition 2.2:
         (P_{λ}^+(w))_i = max(w_i - τ, 0),
@@ -64,36 +62,46 @@ module GSSPAlgorithm
         # Final: clamp each coordinate: [w_i - τ]_+
         # (still unsorted, so we apply it to w in original order!)
         #print difference between w and τ
-        println("w - τ: ", w .- τ)
+        if verbose
+            println("w - τ: ", w .- τ)
+        end
         return max.(w .- τ, 0)
     end
 
     ###############################################################################
     # 3)  Algorithm 1 (GSSP):  β = GSSP(w, k, λ)
     ###############################################################################
-    function GSSP(w::Vector{Float64}, k::Int, λ::Float64)
+    function GSSP(w::Vector{Float64}, k::Int, λ::Float64; verbose::Bool=true)
         """
         Algorithm 1 (GSSP) from Kyrillidis et al. (2013):
         1) x = P_{L_k}(w)
         2) S = supp(x)
         3) β[S] = P_{λ}^+( w[S] ),   β[S^c] = 0
         """
-        println("w: ", w)
+        if verbose
+            println("w: ", w)
+        end
         # (1) Truncate w to top k entries
         x = PLk(w, k)
 
-        println("x: ", x)
+        if verbose
+            println("x: ", x)
+        end
 
         # (2) S = set of indices where x != 0
         S = findall(!iszero, x)
 
-        println("S: ", S)
+        if verbose
+            println("S: ", S)
+        end
 
         # (3) Project the subvector w[S] onto simplex { sum=λ, >=0 }
         w_sub  = w[S]               # original w restricted to S
-        println("w_sub: ", w_sub)
-        β_sub  = P_lambda_plus(w_sub, λ)
-        println("β_sub: ", β_sub)
+        β_sub  = P_lambda_plus(w_sub, λ; verbose=verbose)
+        if verbose
+            println("w_sub: ", w_sub)
+            println("β_sub: ", β_sub)
+        end
 
 
         # Reassemble full β
