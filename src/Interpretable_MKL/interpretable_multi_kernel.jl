@@ -156,7 +156,7 @@ function sparse_optimize_beta_proximal(K_list, α, y, β_old, η::Float64, k0::I
 
 Uses a specialized GSSP method to pick up to k0 large components.
 """
-function sparse_optimize_beta_gssp(K_list, α, y, λ, k0, sum_beta_val)
+function sparse_optimize_beta_gssp(K_list, α, y, λ, k0, sum_beta_val; verbose=false)
     # 1) Compute w = ν / (4λ), where νᵢ = (yα)' * Kᵢ * (yα)
     q   = length(K_list)
     yα  = y .* α
@@ -164,7 +164,7 @@ function sparse_optimize_beta_gssp(K_list, α, y, λ, k0, sum_beta_val)
     w   = ν ./ (4λ)
 
     # 2) Run the GSSP algorithm
-    β   = GSSP(w, k0, sum_beta_val)
+    β   = GSSP(w, k0, sum_beta_val, verbose=verbose)
     return β
 end
 
@@ -576,8 +576,12 @@ function train_interpretable_mkl(
     max_non_decrease::Int=3,
     warm_start::Bool=false,
     warm_start_method::Union{Symbol,Nothing}=nothing,
-    warm_start_beta::Union{Nothing,Vector{Float64}}=nothing
+    warm_start_beta::Union{Nothing,Vector{Float64}}=nothing,
+    verbose::Bool=true                
 )
+    # small helper that prints only when verbose=true
+    log(args...) = (verbose && println(args...))
+
     @assert !isempty(K_list) "Empty kernel list!"
     n = size(X,1)
     q = length(K_list)
@@ -587,33 +591,27 @@ function train_interpretable_mkl(
     ###################################################################
     if warm_start
         if warm_start_beta !== nothing
-            # (A) Warm Start from user-provided betas (e.g. CSV)
             @assert length(warm_start_beta) == q "Length of warm_start_beta must match number of kernels."
             β = copy(warm_start_beta)
-            println("Warm-starting β from provided array = ", β)
+            log("Warm-starting β from provided array = ", β)
         else
-            # (B) Dynamic Warm Start: call solve_mkl_lower_bound
-            println("Dynamic warm start: calling solve_mkl_lower_bound with method=$(warm_start_method).")
+            log("Dynamic warm start: calling solve_mkl_lower_bound with method=$(warm_start_method).")
             obj_val, dynamic_beta = solve_mkl_lower_bound(
                 warm_start_method,
-                K_list,
-                y,
-                C,
-                λ,
-                k0;  # we pass k0 to handle cardinality constraints
+                K_list, y, C, λ, k0;
                 sum_beta_val = (sum_beta_val != 0.0),
-                L = 1000      # L for random-sampling methods
+                L = 1000
             )
             β = copy(dynamic_beta)
-            println("Dynamically computed warm-start β = ", β, " (objective was ", obj_val, ")")
+            log("Dynamically computed warm-start β = ", β, " (objective was ", obj_val, ")")
         end
     else
-        # (C) No Warm Start: do the usual random initialization
         Random.seed!(10)
         random_indices = randperm(q)[1:k0]
         β = zeros(q)
         β[random_indices] .= 1/k0
-        println("No warm start selected; initial random β = ", β)
+
+        log("No warm start selected; initial random β = ", β)
     end
 
     β_old = copy(β)
@@ -640,7 +638,7 @@ function train_interpretable_mkl(
     end
 
     α_old = copy(α)
-    println("Initial α computed from first SVM step.")
+    log("Initial α computed from first SVM step.")
 
     list_alphas = Vector{Vector{Float64}}()
     list_betas  = Vector{Vector{Float64}}()
@@ -652,30 +650,24 @@ function train_interpretable_mkl(
     non_decrease_count = 0
 
     for iter in 1:max_iter
-        println("Iteration $iter...")
+        log("Iteration $iter...")
 
-        ###################################################################
-        # 1) Optimize β (using the current α)
-        ###################################################################
+        # 1) Optimize β
         if beta_method == :hard
             β = sparse_optimize_beta(K_list, α, y, λ, k0)
         elseif beta_method == :proximal
             β = sparse_optimize_beta_proximal(K_list, α, y, β_old, 100.0, k0, λ)
         elseif beta_method == :gssp
-            β = sparse_optimize_beta_gssp(K_list, α, y, λ, k0, sum_beta_val)
+            β = sparse_optimize_beta_gssp(K_list, α, y, λ, k0, sum_beta_val, verbose=verbose)
         else
             error("Unknown beta_method=$beta_method. Choose :hard, :proximal, or :gssp.")
         end
 
-        ###################################################################
-        # 2) Recompute combined kernel with the updated β
-        ###################################################################
+        # 2) Recompute combined kernel
         K_combined = compute_combined_kernel(K_list, β)
         symmetrize!(K_combined)
 
-        ###################################################################
-        # 3) Solve for α (SVM subproblem) with the new K_combined
-        ###################################################################
+        # 3) Solve for α
         if solver_type == :SMO
             α, _ = train_svm_smo!(K_combined, y, C; tol=tolerance, eps=1e-3, max_passes=5)
         elseif solver_type == :GUROBI
@@ -686,19 +678,15 @@ function train_interpretable_mkl(
             error("Unknown solver_type=$solver_type. Choose :SMO, :GUROBI, or :LIBSVM.")
         end
 
-        ###################################################################
-        # 4) Compute and check objective function
-        ###################################################################
+        # 4) Objective
         obj = compute_objective(α, y, K_combined, β, λ)
-        println("Objective = ", obj)
-        println("β = ", β)
-        println("sum(α) = ", sum(α))
+        log("Objective = ", obj)
+        log("β = ", β)
+        log("sum(α) = ", sum(α))
 
-        # Check if the current iteration yields a sufficient decrease.
         if obj_best - obj < tolerance
             non_decrease_count += 1
         else
-            # reset the counter if the objective decreases
             non_decrease_count = 0
             obj_best = obj
             α_old .= α
@@ -706,12 +694,11 @@ function train_interpretable_mkl(
             K_combined_old .= K_combined
         end
 
-        # If the total count of iterations without sufficient decrease exceeds the limit, break.
         if non_decrease_count >= max_non_decrease
-            println("Stopping criterion met: objective did not decrease enough in a total of $max_non_decrease iterations in a row.")
-            println("Returning the best solution found so far.")
-            println("Final β = ", β_old)
-            println("Final objective = ", obj_best)
+            log("Stopping criterion met: objective did not decrease enough in a total of $max_non_decrease iterations in a row.")
+            log("Returning the best solution found so far.")
+            log("Final β = ", β_old)
+            log("Final objective = ", obj_best)
             return α_old, β_old, K_combined_old, obj_best, list_alphas, list_betas
         end
 
@@ -721,5 +708,6 @@ function train_interpretable_mkl(
 
     return α, β, K_combined, obj, list_alphas, list_betas
 end
+
 
 end # module InterpretableMKL
