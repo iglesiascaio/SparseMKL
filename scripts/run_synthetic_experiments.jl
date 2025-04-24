@@ -14,6 +14,7 @@ using Printf
 using DataFrames
 using CSV
 using Base: time
+using NPZ
 
 include("../src/MKL/multi_kernel.jl")
 using .MKL: compute_kernels, compute_bias, predict_mkl
@@ -26,16 +27,16 @@ const GLOBAL_SEED         = 42
 const RUN_CV = false          # ⇐ set to false to skip cross-validation
 Random.seed!(GLOBAL_SEED)
 
-const TRAIN_SIZES         = [50, 100, 200, 300, 400]
+const TRAIN_SIZES         = [50]
 const TEST_SIZE           = 500
-const DIM_X               = 20
+const DIM_X               = 2
 const TOTAL_KERNELS_FIXED = 10
 const TRUE_KERNELS        = 3
 
-const N_KERNELS_LIST      = [5, 6, 7, 8, 9, 10]
+const N_KERNELS_LIST      = [5]
 const N_TRAIN_FIXED       = 400
 const NOISE_RATE          = 0.07
-const N_REPS              = 100
+const N_REPS              = 5
 
 const Cs_range            = [5.0, 10.0, 50.0, 100.0]
 const lambdas_range       = [0.01, 0.1, 1.0, 10.0, 100.0]
@@ -47,30 +48,33 @@ const TOL                 = 1e-2
 # ----------------------- UNIQUE KERNEL CATALOGUE ------------------------------
 const BASE_KERNEL_SPECS = [
     # Linear
-    Dict(:type => "linear",     :params => Dict()),
+    # Dict(:type => "linear",     :params => Dict()),
 
     # Polynomial kernels (degrees and offsets varied reasonably)
     Dict(:type => "polynomial", :params => Dict(:degree => 2, :c => 0.0)),
     Dict(:type => "polynomial", :params => Dict(:degree => 3, :c => 1.0)),
     Dict(:type => "polynomial", :params => Dict(:degree => 4, :c => 5.0)),
     Dict(:type => "polynomial", :params => Dict(:degree => 5, :c => 10.0)),
+    Dict(:type => "polynomial", :params => Dict(:degree => 5, :c => 20.0)),
+
 
     # RBF kernels (gamma spanning local ↔ global)
     Dict(:type => "rbf",        :params => Dict(:gamma  => 0.01)),
     Dict(:type => "rbf",        :params => Dict(:gamma  => 0.1)),
     Dict(:type => "rbf",        :params => Dict(:gamma  => 1.0)),
     Dict(:type => "rbf",        :params => Dict(:gamma  => 10.0)),
+    Dict(:type => "rbf",        :params => Dict(:gamma  => 20.0)),
+
 
     # Laplacian kernels (similar span, L1 vs. L2)
-    Dict(:type => "laplacian",  :params => Dict(:gamma  => 0.01)),
-    Dict(:type => "laplacian",  :params => Dict(:gamma  => 0.5)),
-    Dict(:type => "laplacian",  :params => Dict(:gamma  => 5.0)),
+    # Dict(:type => "laplacian",  :params => Dict(:gamma  => 0.01)),
+    # Dict(:type => "laplacian",  :params => Dict(:gamma  => 0.5)),
+    # Dict(:type => "laplacian",  :params => Dict(:gamma  => 5.0)),
 
     # Sigmoid kernels (vary both slope and bias moderately)
-    Dict(:type => "sigmoid",    :params => Dict(:gamma  => 0.01, :c0 => 0.0)),
-    Dict(:type => "sigmoid",    :params => Dict(:gamma  => 1.0,  :c0 => 1.0)),
+    # Dict(:type => "sigmoid",    :params => Dict(:gamma  => 0.01, :c0 => 0.0)),
+    # Dict(:type => "sigmoid",    :params => Dict(:gamma  => 1.0,  :c0 => 1.0)),
 ]
-
 
 
 function make_unique_kernel_specs(rng::AbstractRNG, n_k::Int)
@@ -178,7 +182,7 @@ function synthetic_dataset(
     y_train = copy(view(y_all, 1:n_train))
     y_test  = copy(view(y_all, n_train+1:N))
 
-    return X_train, y_train, X_test, y_test
+    return X_train, y_train, X_test, y_test, α, b
     end
 
 
@@ -278,7 +282,7 @@ function fit_mkl(
     tr_acc = compute_metrics(ytr, ŷ_tr)[1]
     te_acc = compute_metrics(yte, ŷ_te)[1]
 
-    return β, tr_acc, te_acc, fit_time
+    return β, α, tr_acc, te_acc, fit_time, b
 end
 
 # ------------------------------ RESULT TABLE ----------------------------------
@@ -320,13 +324,14 @@ for setting in (:vary_k, :vary_n)
                 setting == :vary_n ? "Vary n_samples" : "Vary n_kernels",
                 "  p=", p, "  rep=", rep)
 
-        Xtr, ytr, Xte, yte = synthetic_dataset(
+        Xtr, ytr, Xte, yte, α_true, b_true = synthetic_dataset(
             rng, n_train, TEST_SIZE, DIM_X, kernels, true_idx, β_true;
             noise_rate = NOISE_RATE
         )
 
+
         # --- fixed hyperparams ------------------------------------------------
-        β, tr_acc, te_acc, fit_t = fit_mkl(
+        β, α, tr_acc, te_acc, fit_t, b = fit_mkl(
             Xtr, ytr, Xte, yte, kernels;
             C  = 1.0,
             λ  = 10.0,
@@ -344,27 +349,47 @@ for setting in (:vary_k, :vary_n)
         ))
 
         # --- cross‑validation ------------------------------------------------
-        if !RUN_CV
-            println("  [cv]    SKIPPED")
-            continue
-        end
-        Cstar, λstar, k0star, _ = cross_validate_mkl(Xtr, ytr, kernels)
-        βcv, tr_acc, te_acc, fit_t = fit_mkl(
-            Xtr, ytr, Xte, yte, kernels;
-            C  = Cstar,
-            λ  = λstar,
-            k0 = k0star
+        # if !RUN_CV
+        #     println("  [cv]    SKIPPED")
+        #     continue
+        # end
+        # Cstar, λstar, k0star, _ = cross_validate_mkl(Xtr, ytr, kernels)
+        # βcv, tr_acc, te_acc, fit_t = fit_mkl(
+        #     Xtr, ytr, Xte, yte, kernels;
+        #     C  = Cstar,
+        #     λ  = λstar,
+        #     k0 = k0star
+        # )
+        # sup_acc, tpr, tnr, ps = support_metrics(βcv, true_idx)
+        # println("  [cv]    support_acc=", round(sup_acc, digits=3),
+        #         ", TPR=", round(tpr, digits=3),
+        #         ", TNR=", round(tnr, digits=3),
+        #         ", train_acc=", round(tr_acc, digits=3),
+        #         ", test_acc=", round(te_acc, digits=3))
+        # push!(results, (
+        #     string(setting), "cv", n_train, total_k, true_k, rep,
+        #     sup_acc, tpr, tnr, ps, tr_acc, te_acc, fit_t
+        # ))
+
+        fname = "rep_$(setting)_p$(p)_r$(lpad(rep,2,'0')).jld2"
+        mkpath("mkl_sim_results")
+        npz_path = joinpath("mkl_sim_results", replace(fname, r"\.jld2$"=>".npz"))
+        npzwrite(
+          npz_path,
+          Dict(
+            # "X_all"      => Xall,
+            "alpha_true" => α_true,
+            "b_true"     => b_true,
+            "beta_true"  => β_true,
+            "b_est"     => b,
+            "alpha_est"  => α,
+            "beta_est"   => β,
+            "y_train"    => ytr,
+            "y_test"     => yte,
+            "X_train"   => Xtr,
+            "X_test"    => Xte,
+          )
         )
-        sup_acc, tpr, tnr, ps = support_metrics(βcv, true_idx)
-        println("  [cv]    support_acc=", round(sup_acc, digits=3),
-                ", TPR=", round(tpr, digits=3),
-                ", TNR=", round(tnr, digits=3),
-                ", train_acc=", round(tr_acc, digits=3),
-                ", test_acc=", round(te_acc, digits=3))
-        push!(results, (
-            string(setting), "cv", n_train, total_k, true_k, rep,
-            sup_acc, tpr, tnr, ps, tr_acc, te_acc, fit_t
-        ))
     end
 end
 
