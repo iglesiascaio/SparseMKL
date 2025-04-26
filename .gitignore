@@ -9,6 +9,7 @@ __pycache__/
 # Data
 *.csv
 *.npz
+*.json
 
 # Output run supercloud
 *.out
