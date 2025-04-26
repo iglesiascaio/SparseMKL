@@ -113,7 +113,6 @@ lambdas_range = [0.01, 0.1, 1.0, 10.0, 100.0]
 
 
 # Additional MKL hyperparameters
-# (Now we will *not* hardcode k0; it will be tuned from a range)
 max_iter = 50
 sum_beta_val = 1.0
 tolerance = 1e-2
