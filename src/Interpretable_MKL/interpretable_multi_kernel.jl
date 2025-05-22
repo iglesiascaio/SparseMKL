@@ -611,7 +611,7 @@ function train_interpretable_mkl(
         β = zeros(q)
         β[random_indices] .= 1/k0
 
-        #TODO: take out, added for synthetic experiments
+        # uniform initialization
         # β .= 1/q
 
         log("No warm start selected; initial random β = ", β)
