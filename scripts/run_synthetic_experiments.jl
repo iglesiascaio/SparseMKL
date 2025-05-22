@@ -16,6 +16,11 @@ using CSV
 using Base: time
 using NPZ
 using JSON
+using Random
+using LinearAlgebra
+using Statistics
+using Distributions
+using Combinatorics  # for multiset_combinations
 
 include("../src/MKL/multi_kernel.jl")
 using .MKL: compute_kernels, compute_bias, predict_mkl
@@ -30,11 +35,11 @@ Random.seed!(GLOBAL_SEED)
 
 const TRAIN_SIZES         = [50, 100, 200, 300, 400]
 const TEST_SIZE           = 500
-const DIM_X               = 20
-const TOTAL_KERNELS_FIXED = 10
-const TRUE_KERNELS        = 3
+const DIM_X               = 5
+const TOTAL_KERNELS_FIXED = 5
+const TRUE_KERNELS        = 1
 
-const N_KERNELS_LIST      = [5, 6, 7, 8, 9, 10]
+const N_KERNELS_LIST      = [2, 3, 4]
 const N_TRAIN_FIXED       = 400
 const NOISE_RATE          = 0.05
 const N_REPS              = 50
@@ -79,34 +84,34 @@ const TOL                 = 1e-2
 
 const BASE_KERNEL_SPECS = [
     # Linear
-    # Dict(:type => "linear",     :params => Dict()),
+    Dict(:type => "linear",     :params => Dict()),
 
     # Polynomial kernels (degrees and offsets varied reasonably)
     Dict(:type => "polynomial", :params => Dict(:degree => 2, :c => 0.0)),
-    Dict(:type => "polynomial", :params => Dict(:degree => 2, :c => 5.0)),
-    Dict(:type => "polynomial", :params => Dict(:degree => 3, :c => 1.0)),
-    Dict(:type => "polynomial", :params => Dict(:degree => 4, :c => 5.0)),
+    # Dict(:type => "polynomial", :params => Dict(:degree => 2, :c => 5.0)),
+    # Dict(:type => "polynomial", :params => Dict(:degree => 3, :c => 1.0)),
+    # Dict(:type => "polynomial", :params => Dict(:degree => 4, :c => 5.0)),
     # Dict(:type => "polynomial", :params => Dict(:degree => 5, :c => 10.0)),
-    # Dict(:type => "polynomial", :params => Dict(:degree => 7, :c => 20.0)),
+    Dict(:type => "polynomial", :params => Dict(:degree => 7, :c => 3.0)),
 
 
     # RBF kernels (gamma spanning local ↔ global)
     Dict(:type => "rbf",        :params => Dict(:gamma  => 0.01)),
-    Dict(:type => "rbf",        :params => Dict(:gamma  => 0.05)),
-    Dict(:type => "rbf",        :params => Dict(:gamma  => 0.1)),
-    Dict(:type => "rbf",        :params => Dict(:gamma  => 1.0)),
+    # Dict(:type => "rbf",        :params => Dict(:gamma  => 0.05)),
+    # Dict(:type => "rbf",        :params => Dict(:gamma  => 0.1)),
+    # Dict(:type => "rbf",        :params => Dict(:gamma  => 1.0)),
     # Dict(:type => "rbf",        :params => Dict(:gamma  => 5.0)),
     # Dict(:type => "rbf",        :params => Dict(:gamma  => 20.0)),
 
 
     # Laplacian kernels (similar span, L1 vs. L2)
-    Dict(:type => "laplacian",  :params => Dict(:gamma  => 0.01)),
-    Dict(:type => "laplacian",  :params => Dict(:gamma  => 0.5)),
-    # Dict(:type => "laplacian",  :params => Dict(:gamma  => 2.0)),
+    # Dict(:type => "laplacian",  :params => Dict(:gamma  => 0.01)),
+    # Dict(:type => "laplacian",  :params => Dict(:gamma  => 0.5)),
+    Dict(:type => "laplacian",  :params => Dict(:gamma  => 1.0)),
 
     # Sigmoid kernels (vary both slope and bias moderately)
     Dict(:type => "sigmoid",    :params => Dict(:gamma  => 0.01, :c0 => 0.0)),
-    Dict(:type => "sigmoid",    :params => Dict(:gamma  => 1.0,  :c0 => 1.0)),
+    # Dict(:type => "sigmoid",    :params => Dict(:gamma  => 1.0,  :c0 => 1.0)),
 ]
 
 
@@ -153,70 +158,260 @@ function support_metrics(β̂::Vector{Float64}, true_idx::Vector{Int}; tol=1e-3)
     return accuracy, tpr, tnr, length(pred_idx)
 end
 
+using Random
+using LinearAlgebra
+using Statistics
+using Distributions
+using Combinatorics  # for multiset_combinations
+
+# ————————————————————————————————
+# 1) Polynomial feature map via explicit monomials
+# ————————————————————————————————
+function polynomial_features(X::AbstractMatrix{<:Real},
+                             degree::Int,
+                             c::Real)
+    N, D = size(X)
+    # augment with constant feature c
+    X_aug = hcat(X, fill(c, N, 1))
+    combos = multiset_combinations(1:D+1, degree)
+    M = length(combos)
+    Z = zeros(N, M)
+    for (j, combo) in enumerate(combos)
+        Z[:, j] = prod(X_aug[:, combo], dims=2)[:]
+    end
+    return Z
+end
+
+# ————————————————————————————————
+# 2) Random‐Fourier map for RBF & Laplacian
+# ————————————————————————————————
+struct RandomFourierMap
+    W::Matrix{Float64}
+    b::Vector{Float64}
+    scale::Float64
+end
+
+function RandomFourierMap(rng::AbstractRNG,
+                          d::Int,
+                          D_feat::Int,
+                          γ::Real;
+                          laplacian::Bool=false)
+    if laplacian
+        # ω ∼ Cauchy(0, γ)
+        W = rand(rng, Cauchy(0, γ), d, D_feat)
+    else
+        # ω ∼ Normal(0, √(2γ))
+        W = randn(rng, d, D_feat) .* sqrt(2γ)
+    end
+    b = 2π * rand(rng, D_feat)
+    return RandomFourierMap(W, b, sqrt(2/D_feat))
+end
+
+function (m::RandomFourierMap)(X::AbstractMatrix{<:Real})
+    return m.scale * cos.(X * m.W .+ m.b')
+end
+
+# ————————————————————————————————
+# 3) Nyström map for sigmoid kernel
+# ————————————————————————————————
+struct NystromMap{F}
+    landmarks::Matrix{Float64}
+    W::Matrix{Float64}
+    kernel_fn::F
+end
+
+# kernel_fn must be f(X1::Matrix, X2::Matrix) -> Gram(X1,X2)
+function NystromMap(rng::AbstractRNG,
+    X::Matrix{Float64},
+    m::Int,
+    kernel_fn::Function;
+    ε::Float64 = 1e-10)          # tiny regulariser
+# 1) pick landmarks
+U = X[randperm(rng, size(X,1))[1:m], :]
+
+# 2) Gram matrix and eigendecompose
+Λ, V = eigen(Symmetric(kernel_fn(U, U)))
+
+# 3) clip eigen-values → avoid negatives / zeros
+Λ_clipped = clamp.(Λ, ε, Inf)               # every entry ≥ ε
+
+# 4) build whitening matrix
+W = V * Diagonal(Λ_clipped .^ (-0.5))       # V Λ^{-½}
+
+return NystromMap(U, W, kernel_fn)
+end
+
+# end
+
+function (M::NystromMap)(X::AbstractMatrix{<:Real})
+    Kxu = M.kernel_fn(X, M.landmarks)
+    return Kxu * M.W
+end
+
+# factory for sigmoid kernel function
+sigmoid_kernel(γ::Real, c0::Real) =
+    (X1::Matrix{Float64}, X2::Matrix{Float64}) ->
+        tanh.(γ .* (X1 * X2') .+ c0)
+
+# ————————————————————————————————
+# 4) Primal‐based synthetic data generator with sigmoid
+# ————————————————————————————————
+function synthetic_dataset_primal(
+    rng::AbstractRNG,
+    n_train::Int,
+    n_test::Int,
+    dim::Int,
+    kernels,
+    true_idx::Vector{Int},
+    β_true::Vector{Float64};
+    noise_rate::Float64 = 0.05,
+    rff_dim::Int = 200,
+    nys_dim::Int = 200
+)
+    # 1. sample inputs
+    N = n_train + n_test
+    X_all = randn(rng, N, dim)
+    X_tr  = X_all[1:n_train, :]
+    X_te  = X_all[n_train+1:end, :]
+
+    # 2. build explicit feature maps
+    Z_tr_list = Matrix{Float64}[]
+    Z_te_list = Matrix{Float64}[]
+
+    for (j, k) in enumerate(true_idx)
+        spec = kernels[k]
+        βj   = β_true[j]
+
+        if spec[:type] == "linear"
+            Zj_tr = X_tr
+            Zj_te = X_te
+
+        elseif spec[:type] == "polynomial"
+            d = spec[:params][:degree]
+            c = spec[:params][:c]
+            Zj_tr = polynomial_features(X_tr, d, c)
+            Zj_te = polynomial_features(X_te, d, c)
+
+        elseif spec[:type] == "rbf"
+            γ   = spec[:params][:gamma]
+            fmap = RandomFourierMap(rng, dim, rff_dim, γ; laplacian=false)
+            Zj_tr = fmap(X_tr)
+            Zj_te = fmap(X_te)
+
+        elseif spec[:type] == "laplacian"
+            γ   = spec[:params][:gamma]
+            fmap = RandomFourierMap(rng, dim, rff_dim, γ; laplacian=true)
+            Zj_tr = fmap(X_tr)
+            Zj_te = fmap(X_te)
+
+        elseif spec[:type] == "sigmoid"
+            γ  = spec[:params][:gamma]
+            c0 = spec[:params][:c0]
+            # single Nyström map per kernel
+            sigmap = NystromMap(rng, X_all, nys_dim, sigmoid_kernel(γ, c0))
+            Zj_tr = sigmap(X_tr)
+            Zj_te = sigmap(X_te)
+
+        else
+            error("Unsupported kernel type: $(spec[:type])")
+        end
+
+        # scale by √β to reflect mixture weight
+        push!(Z_tr_list, sqrt(βj) * Zj_tr)
+        push!(Z_te_list, sqrt(βj) * Zj_te)
+    end
+
+    # 3. concatenate all features
+    Z_tr = hcat(Z_tr_list...)
+    Z_te = hcat(Z_te_list...)
+
+    # 4. draw primal weight vector and bias
+    D = size(Z_tr, 2)
+    w = randn(rng, D)
+    f_all = vcat(Z_tr, Z_te) * w
+    b = -median(f_all)  # balance labels
+
+    # 5. generate labels
+    f_tr = Z_tr * w .+ b
+    f_te = Z_te * w .+ b
+    y_tr = map(x -> x ≥ 0 ? 1.0 : -1.0, f_tr)
+    y_te = map(x -> x ≥ 0 ? 1.0 : -1.0, f_te)
+
+    # 6. inject noise in training labels
+    n_flip = round(Int, noise_rate * n_train)
+    for idx in randperm(rng, n_train)[1:n_flip]
+        y_tr[idx] *= -1
+    end
+
+    return X_tr, y_tr, X_te, y_te, w, b
+end
+
 # ----------------------- SYNTHETIC DATA GENERATION ----------------------------
 function synthetic_dataset(
-        rng::AbstractRNG,
-        n_train::Int,
-        n_test::Int,
-        dim::Int,
-        kernels,
-        true_idx::Vector{Int},
-        β_true::Vector{Float64};
-        noise_rate::Float64 = 0.05)
+    rng::AbstractRNG,
+    n_train::Int,
+    n_test::Int,
+    dim::Int,
+    kernels,
+    true_idx::Vector{Int},
+    β_true::Vector{Float64};
+    noise_rate::Float64 = 0.05)
 
 
-    # ------------------------------------------------------------------
-    # 1. Draw ALL inputs first and split into plain Matrices
-    # ------------------------------------------------------------------
-    N       = n_train + n_test
-    X_all   = randn(rng, N, dim)
-    X_train = copy(view(X_all, 1:n_train,     :))
-    X_test  = copy(view(X_all, n_train+1:N,   :))
+# ------------------------------------------------------------------
+# 1. Draw ALL inputs first and split into plain Matrices
+# ------------------------------------------------------------------
+N       = n_train + n_test
+X_all   = randn(rng, N, dim)
+X_train = copy(view(X_all, 1:n_train,     :))
+X_test  = copy(view(X_all, n_train+1:N,   :))
 
-    # ------------------------------------------------------------------
-    # 2. Build the combined Gram matrix for ALL samples
-    # ------------------------------------------------------------------
-    Kc     = zeros(N, N)
-    K_tt   = compute_kernels(X_train, X_train, kernels[true_idx])
-    K_tr   = compute_kernels(X_train, X_test,  kernels[true_idx])
-    K_rr   = compute_kernels(X_test,  X_test,  kernels[true_idx])
+# ------------------------------------------------------------------
+# 2. Build the combined Gram matrix for ALL samples
+# ------------------------------------------------------------------
+Kc     = zeros(N, N)
+K_tt   = compute_kernels(X_train, X_train, kernels[true_idx])
+K_tr   = compute_kernels(X_train, X_test,  kernels[true_idx])
+K_rr   = compute_kernels(X_test,  X_test,  kernels[true_idx])
 
-    for (β, Ktt, Ktr, Krr) in zip(β_true, K_tt, K_tr, K_rr)
-        # train–train
-        Kc[1:n_train,     1:n_train]       .+= β .* Ktt
-        # train–test
-        Kc[1:n_train,     n_train+1:end]   .+= β .* Ktr
-        # test–train (transpose of train–test)
-        Kc[n_train+1:end, 1:n_train]       .+= β .* Ktr'
-        # test–test
-        Kc[n_train+1:end, n_train+1:end]   .+= β .* Krr
-    end
+for (β, Ktt, Ktr, Krr) in zip(β_true, K_tt, K_tr, K_rr)
+    # train–train
+    Kc[1:n_train,     1:n_train]       .+= β .* Ktt
+    # train–test
+    Kc[1:n_train,     n_train+1:end]   .+= β .* Ktr
+    # test–train (transpose of train–test)
+    Kc[n_train+1:end, 1:n_train]       .+= β .* Ktr'
+    # test–test
+    Kc[n_train+1:end, n_train+1:end]   .+= β .* Krr
+end
 
-    # ------------------------------------------------------------------
-    # 3. Draw α for *all* N samples and a bias term b
-    # ------------------------------------------------------------------
-    α      = randn(rng, N)
-    b      = - median(Kc * α) # guarantees balanced labels
+# ------------------------------------------------------------------
+# 3. Draw α for *all* N samples and a bias term b
+# ------------------------------------------------------------------
+α      = randn(rng, N)
+b      = - median(Kc * α) # guarantees balanced labels
 
-    # ------------------------------------------------------------------
-    # 4. Generate latent scores and labels
-    # ------------------------------------------------------------------
-    f      = Kc * α .+ b
-    y_all  = map(x -> x ≥ 0 ? 1.0 : -1.0, f)
+# ------------------------------------------------------------------
+# 4. Generate latent scores and labels
+# ------------------------------------------------------------------
+f      = Kc * α .+ b
+y_all  = map(x -> x ≥ 0 ? 1.0 : -1.0, f)
 
-    # flip labels inside the TRAIN set only
-    n_flip   = round(Int, noise_rate * n_train)
-    flip_idx = randperm(rng, n_train)[1:n_flip]
-    y_all[flip_idx] .*= -1
+# flip labels inside the TRAIN set only
+n_flip   = round(Int, noise_rate * n_train)
+flip_idx = randperm(rng, n_train)[1:n_flip]
+y_all[flip_idx] .*= -1
 
-    # ------------------------------------------------------------------
-    # 5. Split outputs into plain Vectors
-    # ------------------------------------------------------------------
-    y_train = copy(view(y_all, 1:n_train))
-    y_test  = copy(view(y_all, n_train+1:N))
+# ------------------------------------------------------------------
+# 5. Split outputs into plain Vectors
+# ------------------------------------------------------------------
+y_train = copy(view(y_all, 1:n_train))
+y_test  = copy(view(y_all, n_train+1:N))
 
-    return X_train, y_train, X_test, y_test, α, b
-    end
+return X_train, y_train, X_test, y_test, α, b
+end
+
+
 
 
 
@@ -321,6 +516,7 @@ end
 # ------------------------------ RESULT TABLE ----------------------------------
 results = DataFrame(
     ExpType         = String[],
+    KernelType         = String[],
     Method          = String[],
     TrainSize       = Int[],
     TotalKernels    = Int[],
@@ -353,6 +549,7 @@ for setting in (:vary_k, :vary_n)
 
             true_idx = sample(rng, 1:total_k, true_k; replace = false)
             β_true   = dirichlet_vec(rng, true_k)
+            true_types = [kernels[i][:type] for i in true_idx]
 
 
             println("\n[", Dates.format(now(), "HH:MM:SS"), "] ",
@@ -378,8 +575,10 @@ for setting in (:vary_k, :vary_n)
                     ", TNR=", round(tnr, digits=3),
                     ", train_acc=", round(tr_acc, digits=3),
                     ", test_acc=", round(te_acc, digits=3))
+
+            @infiltrate
             push!(results, (
-                string(setting), "fixed", n_train, total_k, true_k, rep,
+                string(setting), "fixed", true_types[1], n_train, total_k, true_k, rep,
                 sup_acc, tpr, tnr, ps, tr_acc, te_acc, fit_t
             ))
 
@@ -406,32 +605,33 @@ for setting in (:vary_k, :vary_n)
             #     sup_acc, tpr, tnr, ps, tr_acc, te_acc, fit_t
             # ))
             
-            # fname = "rep_$(setting)_p$(p)_r$(lpad(rep,2,'0')).jld2"
-            # mkpath("mkl_sim_results")
-            # npz_path = joinpath("mkl_sim_results", replace(fname, r"\.jld2$"=>".npz"))
-            # npzwrite(
-            #   npz_path,
-            #   Dict(
-            #     # "X_all"      => Xall,
-            #     "true_idx"   => true_idx,
-            #     "alpha_true" => α_true,
-            #     "b_true"     => b_true,
-            #     "beta_true"  => β_true,
-            #     "b_est"     => b,
-            #     "alpha_est"  => α,
-            #     "beta_est"   => β,
-            #     "y_train"    => ytr,
-            #     "y_test"     => yte,
-            #     "X_train"   => Xtr,
-            #     "X_test"    => Xte,
-            #   )
-            # )
+            fname = "rep_$(setting)_p$(p)_r$(lpad(rep,2,'0')).jld2"
+            mkpath("mkl_sim_results")
+            npz_path = joinpath("mkl_sim_results", replace(fname, r"\.jld2$"=>".npz"))
+            npzwrite(
+              npz_path,
+              Dict(
+                # "X_all"      => Xall,
+                "true_idx"   => true_idx,
+                "alpha_true" => α_true,
+                "b_true"     => b_true,
+                "beta_true"  => β_true,
+                "b_est"     => b,
+                "alpha_est"  => α,
+                "beta_est"   => β,
+                "y_train"    => ytr,
+                "y_test"     => yte,
+                "X_train"   => Xtr,
+                "X_test"    => Xte,
+              )
+            )
 
-            # json_path = replace(npz_path, ".npz" => "_kernels.json")
-            # open(json_path, "w") do io
-            # JSON.print(io, kernels)
-            # end
+            json_path = replace(npz_path, ".npz" => "_kernels.json")
+            open(json_path, "w") do io
+            JSON.print(io, kernels)
+            end
         catch e
+            @infiltrate
             println("  [ERROR] ", e)
             continue
         end
