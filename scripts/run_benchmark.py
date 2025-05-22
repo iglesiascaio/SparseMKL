@@ -318,7 +318,7 @@ RESULT_COLUMNS = [
     "SVM_Precision",
     "SVM_Recall",
     "SVM_F1_Score",
-    # Additional fields for new requirements:
+    # Additional columns
     "MKL1_Param",  # Chosen lam for EasyMKL
     "MKL1_TrainTime",  # Final fit time for EasyMKL
     "MKL2_TrainTime",  # Final fit time for AverageMKL
@@ -516,7 +516,6 @@ def run_experiment_for_dataset(ds_name):
         "SVM_Precision": svm_test_prec,
         "SVM_Recall": svm_test_rec,
         "SVM_F1_Score": svm_test_f1,
-        # New fields:
         "MKL1_Param": best_lam,  # Param selected by CV for EasyMKL
         "MKL1_TrainTime": mkl1_train_time,
         "MKL2_TrainTime": mkl2_train_time,
