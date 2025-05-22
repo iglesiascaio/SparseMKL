@@ -352,11 +352,9 @@ module MKL
             println("Iteration $iter...")
 
             # Step 1: Optimize α given β
-            ## CONTINUE USING GUROBI HERE FOR NOW
             α, K_combined = train_svm(X, y, C, "precomputed"; K_combined=K_combined)
 
             # Step 2: Optimize β given α
-            ### CHANGE HERE FOR STEP 1 OF NEXT STEPS - believes the optimal value can be written in closed form
             β = optimize_beta(K_list, α, y, λ)
 
             # Update the combined kernel

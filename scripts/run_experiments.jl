@@ -24,12 +24,9 @@ using .GetData: get_dataset
 include("../src/MKL/multi_kernel.jl")
 using .MKL: compute_kernels, train_mkl, compute_bias, predict_mkl, compute_combined_kernel
 
-# -------------------------------------------------------------------------
-# NEW: We'll re-include or ensure we see the updated train_interpretable_mkl
-#      with warm_start arguments (see the second code section below).
-# -------------------------------------------------------------------------
-include("../src/Interpretable_MKL/interpretable_multi_kernel.jl")
-using .InterpretableMKL: train_interpretable_mkl
+
+include("../src/Sparse_MKL/sparse_multi_kernel.jl")
+using .SparseMKL: train_sparse_mkl
 
 ################################################################################
 # Option to skip cross-validation and warm-start from a CSV
@@ -229,7 +226,7 @@ function cross_validate_mkl(X, y, kernels;
                     K_list_val   = compute_kernels(X_tr, X_val, kernels)
 
 
-                    α_tmp, β_tmp, K_comb_tmp, _, _, _ = train_interpretable_mkl(
+                    α_tmp, β_tmp, K_comb_tmp, _, _, _ = train_sparse_mkl(
                         X_tr, y_tr, c_val, K_list_train, lam_val;
                         max_iter=max_iter,
                         tolerance=tolerance,
@@ -377,7 +374,7 @@ for dataset in DATASETS
     K_list_test  = compute_kernels(X_train, X_test,  kernels)
 
     t0 = time()
-    α, β, K_combined, obj, _, _ = train_interpretable_mkl(
+    α, β, K_combined, obj, _, _ = train_sparse_mkl(
         X_train, y_train, best_C_mkl, K_list_train, best_lam_mkl;
         max_iter=max_iter,
         tolerance=tolerance,

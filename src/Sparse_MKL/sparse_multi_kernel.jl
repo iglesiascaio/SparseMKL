@@ -1,4 +1,4 @@
-module InterpretableMKL
+module SparseMKL
 
 using CSV,
       DataFrames,
@@ -118,7 +118,7 @@ end
 
 function sparse_optimize_beta_proximal(K_list, α, y, β_old, η::Float64, k0::Int, λ::Float64)
         """
-        Implements a proximal-type β update for interpretable MKL
+        Implements a proximal-type β update for sparse MKL
         """
         q   = length(K_list)
         yα  = y .* α
@@ -561,7 +561,7 @@ function random_init_alphas(n::Int, C::Float64, y::Vector{Float64})
     return α
 end
 
-function train_interpretable_mkl(
+function train_sparse_mkl(
     X::Matrix{Float64},
     y::Vector{Float64},
     C::Float64,
@@ -713,4 +713,4 @@ function train_interpretable_mkl(
 end
 
 
-end # module InterpretableMKL
+end # module SparseMKL
