@@ -69,7 +69,6 @@ end
 ################################################################################
 DATASETS = [
     :iris, 
-    # :adult,
     :wine, 
     # :breastcancer,
     :ionosphere,
@@ -309,7 +308,7 @@ end
 for dataset in DATASETS
     println("\n=== Processing dataset: $dataset ===")
     # Download/Load data
-    frac = dataset == :adult ? 0.33 : 1.00
+    frac = 1.00
     X_train, y_train, X_test, y_test = get_dataset(dataset; force_download=false, frac=frac, train_ratio=0.8)
 
     if size(X_train,1) != length(y_train) && size(X_train,2) == length(y_train)

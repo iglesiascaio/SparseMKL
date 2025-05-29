@@ -272,7 +272,6 @@ def majority_vote_baseline(y_train, y_test):
 ###############################################################################
 DATASETS = [
     "iris",
-    # "adult",
     "wine",
     "breastcancer",
     "ionosphere",
@@ -336,7 +335,7 @@ results_df = pd.DataFrame(columns=RESULT_COLUMNS)
 
 def run_experiment_for_dataset(ds_name):
     print(f"\n=== Processing dataset: {ds_name} ===")
-    frac = 0.33 if ds_name == "adult" else 1.0
+    frac = 1.0
 
     # -- Call the Julia code to get the dataset
     X_train, y_train, X_test, y_test = get_julia_dataset(ds_name, frac=frac, seed=123)
@@ -535,7 +534,6 @@ def main():
 
     DATASETS = [
         "iris",
-        # "adult",
         "wine",
         "breastcancer",
         "ionosphere",

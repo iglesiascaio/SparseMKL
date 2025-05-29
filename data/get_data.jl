@@ -19,7 +19,7 @@ const DATA_DIR = "../data"
 # Instead, we define a custom function below to handle one-hot encoding.
 
 const DATASET_CONFIG = Dict{Symbol, NamedTuple}(
-    # 1) IRIS (Originally 3 classes => artificially turned into binary)
+    # IRIS (Originally 3 classes => artificially turned into binary)
     :iris => (
         url            = "https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data",
         local_filename = "iris.csv",
@@ -30,43 +30,8 @@ const DATASET_CONFIG = Dict{Symbol, NamedTuple}(
         categorical_cols = []
     ),
 
-    # 2) ADULT
-    :adult => (
-        url            = "https://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.data",
-        local_filename = "adult.csv",
-        has_header     = true,
-        rename_map     = [
-            :age,
-            :workclass,
-            :fnlwgt,
-            :education,
-            :education_num,
-            :marital_status,
-            :occupation,
-            :relationship,
-            :race,
-            :sex,
-            :capital_gain,
-            :capital_loss,
-            :hours_per_week,
-            :native_country,
-            :income
-        ],
-        label_fn       = row -> (row[:income] == " >50K" ? 1 : -1),
-        numeric_cols   = [:age, :education_num, :capital_gain, :capital_loss, :hours_per_week],
-        categorical_cols = [
-            # :workclass, 
-            # :education, 
-            # :marital_status, 
-            # :occupation,
-            # :relationship, 
-            :race, 
-            :sex, 
-            # :native_country, 
-        ]
-    ),
 
-    # 3) WINE (Originally 3 classes => forcibly turned into binary)
+    # WINE (Originally 3 classes => forcibly turned into binary)
     :wine => (
         url            = "https://archive.ics.uci.edu/ml/machine-learning-databases/wine/wine.data",
         local_filename = "wine.csv",
@@ -85,7 +50,7 @@ const DATASET_CONFIG = Dict{Symbol, NamedTuple}(
         categorical_cols = []
     ),
 
-    # 4) BREASTCANCER
+    # BREASTCANCER
     :breastcancer => (
         url            = "https://archive.ics.uci.edu/ml/machine-learning-databases/breast-cancer-wisconsin/wdbc.data",
         local_filename = "breastcancer.csv",
@@ -107,7 +72,7 @@ const DATASET_CONFIG = Dict{Symbol, NamedTuple}(
         categorical_cols = []
     ),
 
-    # 5) IONOSPHERE
+    # IONOSPHERE
     :ionosphere => (
         url            = "https://archive.ics.uci.edu/ml/machine-learning-databases/ionosphere/ionosphere.data",
         local_filename = "ionosphere.csv",
@@ -118,7 +83,7 @@ const DATASET_CONFIG = Dict{Symbol, NamedTuple}(
         categorical_cols = []
     ),
 
-    # 6) SPAMBASE
+    # SPAMBASE
     :spambase => (
         url            = "https://archive.ics.uci.edu/ml/machine-learning-databases/spambase/spambase.data",
         local_filename = "spambase.csv",
@@ -129,7 +94,7 @@ const DATASET_CONFIG = Dict{Symbol, NamedTuple}(
         categorical_cols = []
     ),
 
-    # 7) BANKNOTE AUTHENTICATION
+    # BANKNOTE AUTHENTICATION
     :banknote => (
         url            = "https://archive.ics.uci.edu/ml/machine-learning-databases/00267/data_banknote_authentication.txt",
         local_filename = "banknote.csv",
@@ -140,24 +105,7 @@ const DATASET_CONFIG = Dict{Symbol, NamedTuple}(
         categorical_cols = []
     ),
 
-    # 8) PIMA INDIANS DIABETES
-    :pimaindians => (
-        url            = "https://archive.ics.uci.edu/ml/machine-learning-databases/pima-indians-diabetes/pima-indians-diabetes.data",
-        local_filename = "pimaindians.csv",
-        has_header     = false,
-        rename_map     = [
-            :n_pregnant, :plasma_glucose, :diastolic_bp, :triceps_thickness,
-            :serum_insulin, :bmi, :pedigree, :age, :class
-        ],
-        label_fn       = row -> (row[:class] == 1 ? 1 : -1),
-        numeric_cols   = [
-            :n_pregnant, :plasma_glucose, :diastolic_bp, :triceps_thickness,
-            :serum_insulin, :bmi, :pedigree, :age
-        ],
-        categorical_cols = []
-    ),
-
-    # 9) HEART DISEASE (Cleveland) - multi-class turned to binary
+    # HEART DISEASE (Cleveland) - multi-class turned to binary
     :heart => (
         url            = "https://archive.ics.uci.edu/ml/machine-learning-databases/heart-disease/processed.cleveland.data",
         local_filename = "heart.csv",
@@ -174,18 +122,7 @@ const DATASET_CONFIG = Dict{Symbol, NamedTuple}(
         categorical_cols = []
     ),
 
-    # 10) GERMAN CREDIT (numeric version) - 2 classes coded as 1/2
-    :german => (
-        url            = "https://archive.ics.uci.edu/ml/machine-learning-databases/statlog/german/german.data-numeric",
-        local_filename = "german_numeric.csv",
-        has_header     = false,
-        rename_map     = vcat([Symbol("feat$i") for i in 1:24], [:class]),
-        label_fn       = row -> (row[:class] == 1 ? 1 : -1),
-        numeric_cols   = [Symbol("feat$i") for i in 1:24],
-        categorical_cols = []
-    ),
-
-    # 11) HABERMAN
+    # HABERMAN
     :haberman => (
         url            = "https://archive.ics.uci.edu/ml/machine-learning-databases/haberman/haberman.data",
         local_filename = "haberman.csv",
@@ -196,7 +133,7 @@ const DATASET_CONFIG = Dict{Symbol, NamedTuple}(
         categorical_cols = []
     ),
 
-    # 12) MAMMOGRAPHIC MASSES
+    # MAMMOGRAPHIC MASSES
     :mammographic => (
         url            = "https://archive.ics.uci.edu/ml/machine-learning-databases/mammographic-masses/mammographic_masses.data",
         local_filename = "mammographic.csv",
@@ -207,7 +144,7 @@ const DATASET_CONFIG = Dict{Symbol, NamedTuple}(
         categorical_cols = []
     ),
 
-    # 14) PARKINSON'S
+    # PARKINSON'S
     :parkinsons => (
         url            = "https://archive.ics.uci.edu/ml/machine-learning-databases/parkinsons/parkinsons.data",
         local_filename = "parkinsons.csv",
@@ -226,17 +163,6 @@ const DATASET_CONFIG = Dict{Symbol, NamedTuple}(
             :shimmer_dda, :nhr, :hnr, :rpde, :dfa, :spread1, :spread2,
             :d2, :ppe
         ],
-        categorical_cols = []
-    ),
-
-    # 15) SONAR
-    :sonar => (
-        url            = "https://archive.ics.uci.edu/ml/machine-learning-databases/sonar/sonar.all-data",
-        local_filename = "sonar.csv",
-        has_header     = false,
-        rename_map     = vcat([Symbol("feat$i") for i in 1:60], [:label]),
-        label_fn       = row -> (row[:label] == "R" ? -1 : 1),
-        numeric_cols   = [Symbol("feat$i") for i in 1:60],
         categorical_cols = []
     ),
 )
@@ -397,17 +323,6 @@ function get_dataset(ds_name::String; force_download::Bool=false, frac::Real=1.0
     # convert ds_name from String to Symbol
     # useful when usign the python call 
     return get_dataset(Symbol(ds_name); force_download=force_download, frac=frac, train_ratio=train_ratio)
-end
-
-# ----------------------------------------------------------------------------
-# 5) Convenience Wrappers for IRIS and ADULT
-# ----------------------------------------------------------------------------
-function get_iris_data(; force_download=false)
-    return get_dataset(:iris; force_download=force_download, frac=1.0, train_ratio=0.8)
-end
-
-function get_adult_data(; force_download=false, frac=1.0)
-    return get_dataset(:adult; force_download=force_download, frac=frac, train_ratio=0.8)
 end
 
 end # module GetData

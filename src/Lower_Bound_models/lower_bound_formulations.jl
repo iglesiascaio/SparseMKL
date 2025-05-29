@@ -8,8 +8,8 @@ include("../MKL/multi_kernel.jl")
 using .MKL: compute_kernels, compute_combined_kernel
 
 using JuMP
-using MosekTools     # For the perspective-based MISDP and our new 3×3, 4×4 PSD constraints
-using Gurobi         # (We keep this for the existing two SOC relaxations, if desired.)
+using MosekTools     
+using Gurobi         
 using LinearAlgebra
 using LIBSVM
 using Statistics
@@ -46,8 +46,8 @@ function symmetrize!(K::Matrix{Float64}; tol::Float64=1e-10)
     return K
 end
 
-############### Method A: Perspective‐based MISDP solver (Mosek) ###############
-function mkl_psd_solver(
+############### Method A: SDP full relaxation (Mosek) ###############
+function sdp_full_relaxation_solver(
     K_list::Vector{Matrix{Float64}},
     y::Vector{Float64},
     C::Float64,
@@ -255,8 +255,8 @@ function soc_relaxation_2_solver_random(
 end
 
 
-#################### soc_relaxation_3_solver ####################
-function soc_relaxation_3_solver(
+#################### sdp_relaxation_3x3_solver ####################
+function sdp_relaxation_3x3_solver(
     K_list::Vector{Matrix{Float64}},
     y::Vector{Float64},
     C::Float64,
@@ -264,7 +264,7 @@ function soc_relaxation_3_solver(
     k::Int;
     sum_beta_val::Bool=true
 )
-    # Match the style of mkl_psd_solver but only enforce 3×3 sub-blocks PSD.
+    # Match the style of sdp_full_relaxation_solver but only enforce 3×3 sub-blocks PSD.
     n = size(K_list[1],1)
     q = length(K_list)
 
@@ -325,77 +325,6 @@ function soc_relaxation_3_solver(
     return objective_value(model), value.(β)
 end
 
-#################### soc_relaxation_4_solver ####################
-function soc_relaxation_4_solver(
-    K_list::Vector{Matrix{Float64}},
-    y::Vector{Float64},
-    C::Float64,
-    λ::Float64,
-    k::Int;
-    sum_beta_val::Bool=true
-)
-    # Match the style of mkl_psd_solver but only enforce 4×4 sub-blocks PSD.
-    n = size(K_list[1],1)
-    q = length(K_list)
-
-    model = Model(Mosek.Optimizer)
-    set_optimizer_attribute(model, "QUIET", true)
-
-    # Variables
-    @variable(model, η)
-    @variable(model, θ >= 0)
-    @variable(model, σ[1:n] >= 0)
-    @variable(model, γ[1:n])
-    @variable(model, β[1:q] >= 0)
-    @variable(model, ω[1:q] >= 0)
-    @variable(model, 0 <= z[1:q] <= 1)
-
-    # Big (n+1)×(n+1) matrix M, not declared fully PSD
-    @variable(model, M[1:(n+1), 1:(n+1)])
-
-    # 1) Margin constraints
-    @constraint(model, [i in 1:n], 1 - σ[i] <= y[i]*(η + γ[i]))
-
-    # 2) Link M to (θ, γ, ∑β[i]K_list[i])
-    @constraint(model, M[1,1] == θ)
-    for i in 1:n
-        @constraint(model, M[i+1,1] == γ[i])
-        @constraint(model, M[1,i+1] == γ[i])
-    end
-    for i in 1:n, j_ in 1:n
-        @constraint(model, M[i+1, j_+1] == sum(β[r]*K_list[r][i,j_] for r in 1:q))
-    end
-
-    # 3) sum(β) = 1 if desired
-    if sum_beta_val
-        @constraint(model, sum(β) == 1)
-    end
-
-    # 4) sum(z) <= k
-    @constraint(model, sum(z) <= k)
-
-    # 5) Perspective constraints: 2x2 PSD for β
-    for i in 1:q
-        @constraint(model, [z[i], ω[i], sqrt(2)*β[i]] in RotatedSecondOrderCone())
-    end
-
-    # 6) 4×4 sub-blocks that include θ (row/col 1)
-    for j in 1:(n-2)
-        for k_ in (j+1):(n-1)
-            for l in (k_+1):n
-                @constraint(model,
-                    M[[1, j+1, k_+1, l+1], [1, j+1, k_+1, l+1]] in PSDCone()
-                )
-            end
-        end
-    end
-
-    # 7) Objective
-    @objective(model, Min, C*sum(σ) + 0.5*θ + λ*sum(ω))
-
-    optimize!(model)
-    return objective_value(model), value.(β)
-end
 
 ############### 5) A helper to dispatch any of the six methods ###############
 function solve_mkl_lower_bound(
@@ -408,8 +337,8 @@ function solve_mkl_lower_bound(
     sum_beta_val::Bool=true,
     L::Int=10
 )
-    if method == :perspective
-        return mkl_psd_solver(K_list, y, C, λ, k; sum_beta_val=sum_beta_val)
+    if method == :sdp_full
+        return sdp_full_relaxation_solver(K_list, y, C, λ, k; sum_beta_val=sum_beta_val)
     elseif method == :soc1
         return soc_relaxation_1_solver(K_list, y, C, λ, k; sum_beta_val=sum_beta_val)
     elseif method == :soc2random
@@ -418,10 +347,8 @@ function solve_mkl_lower_bound(
             sum_beta_val=sum_beta_val,
             L=L
         )
-    elseif method == :soc3
-        return soc_relaxation_3_solver(K_list, y, C, λ, k; sum_beta_val=sum_beta_val)
-    elseif method == :soc4
-        return soc_relaxation_4_solver(K_list, y, C, λ, k; sum_beta_val=sum_beta_val)
+    elseif method == :sdp_3x3
+        return sdp_relaxation_3x3_solver(K_list, y, C, λ, k; sum_beta_val=sum_beta_val)
     else
         error("Unknown method symbol: $method")
     end
@@ -448,11 +375,10 @@ function main()
     
     # Methods to run
     methods = [
-        :perspective,
+        :sdp_full,
         # :soc1,
         # :soc2random,
-        # :soc3,
-        # :soc4
+        # :sdp_3x3,
     ]
     
     results = DataFrame(
@@ -508,8 +434,8 @@ function main()
         for meth in methods
             println("  >> Solving with method: $meth using best parameters for $dset")
 
-            if dset == :spambase && meth == :soc3
-                println("Skipping soc3 for spambase due to numerical issues.")
+            if dset == :spambase && meth == :sdp_3x3
+                println("Skipping sdp_3x3 for spambase due to numerical issues.")
                 continue
             end
     

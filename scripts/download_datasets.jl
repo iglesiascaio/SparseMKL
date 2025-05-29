@@ -1,6 +1,6 @@
 
 include("../data/get_data.jl")
-using .GetData: get_adult_data, get_dataset
+using .GetData: get_dataset
 
 function download_all_datasets()
     for ds_name in keys(GetData.DATASET_CONFIG)
