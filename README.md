@@ -4,7 +4,7 @@ Software supplement for the manuscript **“Sparse Multiple Kernel Learning: Alt
 
 ## Introduction
 
-Support Vector Machines (SVMs) aim to construct predictive classifiers by embedding inputs $x_i \in \mathbb{R}^m$ into a high- (possibly infinite-) dimensional feature space and learning a hyperplane that separates labels $y_i \in \{-1,1\}$. Rather than choosing a single kernel $K$ a priori, Multiple Kernel Learning (MKL) considers convex combinations of $q$ candidate kernels $\{K_1,\dots,K_q\}$, with weights $\beta \in \mathbb{R}^q_+$, to jointly learn a suitable representation and classifier.
+Support Vector Machines (SVMs) aim to construct predictive classifiers by embedding inputs $x_i \in \mathbb{R}^m$ into a high - possibly infinite - dimensional feature space and learning a hyperplane that separates labels $y_i \in \{-1,1\}$. Rather than choosing a single kernel $K$ a priori, Multiple Kernel Learning (MKL) considers convex combinations of $q$ candidate kernels $\{K_1,\dots,K_q\}$, with weights $\beta \in \mathbb{R}^q_+$, to jointly learn a suitable representation and classifier.
 
 In standard MKL, $\beta$ lies in the probability simplex, encouraging sparsity only implicitly. In this work, we consider a more structured variant—**Sparse MKL**—where an explicit cardinality constraint $\|\beta\|_0 \leq k_0$ is imposed. We study the following nonconvex-concave problem:
 
