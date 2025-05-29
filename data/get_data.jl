@@ -316,6 +316,10 @@ function get_dataset(ds_name::Symbol; force_download::Bool=false, frac::Real=1.0
         X_test[:, 1:num_dim]  = (X_test[:, 1:num_dim]  .- train_mean) ./ train_std
     end
 
+    # Ensure y in {-1, +1}, stored as Float64
+    y_train = Float64.(y_train)
+    y_test  = Float64.(y_test)
+
     return X_train, y_train, X_test, y_test
 end
 

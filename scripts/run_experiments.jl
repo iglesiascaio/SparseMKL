@@ -318,10 +318,6 @@ for dataset in DATASETS
         X_test = X_test'
     end
 
-    # Ensure y in {-1, +1}, stored as Float64
-    y_train = Float64.(y_train)
-    y_test  = Float64.(y_test)
-
     train_size = length(y_train)
     test_size  = length(y_test)
 
