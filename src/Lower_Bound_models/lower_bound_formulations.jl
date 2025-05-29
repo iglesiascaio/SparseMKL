@@ -357,7 +357,7 @@ end
 ############### 6) Main driver ###############
 function main()
     # Read the CSV with the best parameters from previous runs
-    best_params = CSV.read("results.csv", DataFrame)
+    best_params = CSV.read("../results/final_results_cold_SMKL.csv", DataFrame)
     
     # List of datasets to run relaxations on
     datasets = [
