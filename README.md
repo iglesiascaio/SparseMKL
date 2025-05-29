@@ -19,11 +19,11 @@ This repository provides:
 ├── src/                  # solver source code
 │   ├── MKL/              # baseline dense MKL implementation
 │   ├── Sparse_MKL/       # alternating best-response heuristic (our SMKL)
-│   └── Lower_Bound_models/  # MISDP & SDP/SOCP relaxations
+│   └── Lower_Bound_models/  # SDP/SOCP relaxations
 ├── scripts/              # experiment launchers (Julia / Python / Bash)
-├── notebooks/            # result analysis and plotting (Jupyter)
+├── notebooks/            # result analysis (Jupyter)
 ├── results/              # pre-computed CSV outputs for every experiment
-└── README.md             # you are here
+└── README.md             
 ```
 
 ---
@@ -62,9 +62,6 @@ TODO: parameters needed
 ```bash
 # warm-start from pre-computed lower-bound solutions
 julia --project scripts/run_experiments.jl          
-
-# or perform a full 10-fold CV from scratch
-CROSS_VALIDATION=true julia --project scripts/run_experiments.jl
 ```
 
 Outputs are saved in CSV files.
