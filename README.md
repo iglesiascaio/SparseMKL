@@ -8,7 +8,7 @@ Support Vector Machines (SVMs) aim to construct predictive classifiers by embedd
 
 In standard MKL, $\beta$ lies in the probability simplex, encouraging sparsity only implicitly. In this work, we consider a more structured variant—**Sparse MKL**—where an explicit cardinality constraint $\|\beta\|_0 \leq k_0$ is imposed. We study the following nonconvex-concave problem:
 
-$\min_{\beta \in \mathbb{R}^q_+} \max_{\alpha \in \mathbb{R}^n_+} \sum_{i=1}^n \alpha_i - \frac{1}{2} (y \circ \alpha)^T \left( \sum_{j=1}^q \beta_j K_j \right) (y \circ \alpha) + \lambda \|\beta\|_2^2$
+$\min_{\beta \in \mathbb{R}^q_+} \max_{\alpha \in \mathbb{R}^n_+} \sum_{i=1}^n \alpha_i - \frac{1}{2} (y \circ \alpha)^T \left( \sum_{j=1}^q \beta_j K_j \right) (y \circ \alpha) + \lambda |β|_2^2$
 
 subject to:
 
