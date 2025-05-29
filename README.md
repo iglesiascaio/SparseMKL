@@ -79,8 +79,9 @@ Klist  = compute_kernels(Xtr, Xtr, kernels)
 Experiment reproduction:
 
 ```bash
-julia scripts/run_experiments.jl              # heuristic method (our SMKL)
-julia scripts/run_lowerbound_formulations.jl  # relaxations
+cd scripts; julia
+include("run_experiments.jl")     # heuristic method (our SMKL)          
+include("run_lowerbound_formulations.jl")  # relaxations
 ```
 
 Note that we ran this multiple times choosing different parameters in the code (e.g. warm-start-method, cross-validation, etc.)
