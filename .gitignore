@@ -14,6 +14,8 @@ __pycache__/
 # Output run supercloud
 *.out
 
+.DS_Store
+
 # Distribution / packaging
 .Python
 build/
