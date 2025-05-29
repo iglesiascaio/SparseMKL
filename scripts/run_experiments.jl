@@ -33,7 +33,7 @@ using .SparseMKL: train_sparse_mkl
 ################################################################################
 const warm_start = true   # Set to `true` to skip CV & use precomputed (C, λ, k0, Betas)
 # const warm_params_csv = "../results/hyper_param_lower_bound_results.csv"
-const warm_params_csv = "../results/full_SDP_small_datasets.csv"
+const warm_params_csv = "../results/final_full_SDP_small_datasets.csv"
 
 cross_validation = false   # Set to `true` to perform CV for MKL hyperparams
 
@@ -46,8 +46,8 @@ function parse_betas_str(betas_str::AbstractString)
     return parse.(Float64, strip.(parts))
 end
 
-# We want "soc2random" for spambase, else "soc3"
-function get_warm_params_for_dataset(dset::Symbol, method::String="soc3")
+# We want "soc2random" for spambase, else "sdp_3x3"
+function get_warm_params_for_dataset(dset::Symbol, method::String="sdp_3x3")
 
     method_needed = (dset == :spambase) ? "soc2random" : method
     subset = filter(row ->
@@ -330,7 +330,7 @@ for dataset in DATASETS
     # -----------------------------------------------------------
     if warm_start && !cross_validation
         # Skip cross-validation; read from CSV
-        best_C_mkl, best_lam_mkl, best_k0_mkl, warm_betas = get_warm_params_for_dataset(dataset, "perspective")
+        best_C_mkl, best_lam_mkl, best_k0_mkl, warm_betas = get_warm_params_for_dataset(dataset, "sdp_full")
         println("  [MKL-WarmStart] Using (C, λ, k0) = ($best_C_mkl, $best_lam_mkl, $best_k0_mkl).")
     elseif warm_start && cross_validation
         _, _, _, warm_betas = get_warm_params_for_dataset(dataset)
@@ -383,7 +383,7 @@ for dataset in DATASETS
         beta_method=:gssp,
         warm_start=warm_start,
         warm_start_beta=(warm_start ? warm_betas : nothing) 
-        # warm_start_method=:soc3,
+        # warm_start_method=:sdp_3x3,
         # warm_start_beta=nothing
     )
     fit_time_mkl = time() - t0
@@ -474,7 +474,7 @@ end
 # Save and display results
 ################################################################################
 println("Start writing results to CSV file")
-CSV.write("no_cross_val_warm_start_results.csv", results)
+CSV.write("results.csv", results)
 println("Results written to results.csv")
 
 # Filter successful datasets
