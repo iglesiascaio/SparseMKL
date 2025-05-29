@@ -4,7 +4,7 @@ using CSV
 using DataFrames
 using Random
 using Statistics
-using StatsBase    # used for 'sample', not 'dummyvar'
+using StatsBase    
 using Downloads
 using Printf
 

@@ -571,7 +571,7 @@ function train_sparse_mkl(
     tolerance::Float64=1e-5,
     k0::Int=3,
     sum_beta_val::Float64=1.0,
-    solver_type::Symbol=:SMO,
+    solver_type::Symbol=:LIBSVM,
     beta_method::Symbol=:gssp,
     max_non_decrease::Int=3,
     warm_start::Bool=false,
