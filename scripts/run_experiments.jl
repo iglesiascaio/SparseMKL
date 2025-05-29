@@ -50,6 +50,7 @@ end
 function get_warm_params_for_dataset(dset::Symbol, method::String="sdp_3x3")
 
     method_needed = (dset == :spambase) ? "soc2random" : method
+    println("Using method: $method_needed")
     subset = filter(row ->
         row.dataset == string(dset) && row.method == method_needed,
         warm_df
