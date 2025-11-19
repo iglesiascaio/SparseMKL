@@ -586,6 +586,12 @@ function train_sparse_mkl(
     n = size(X,1)
     q = length(K_list)
 
+    # --------------------------------------
+    # per-iteration objective traces
+    # --------------------------------------
+    obj_after_beta_seq  = Float64[]   # objective after β-update (before α-update)
+    obj_after_alpha_seq = Float64[]   # objective after α-update
+
     ###################################################################
     # Step 1: Initialize β 
     ###################################################################
@@ -610,10 +616,6 @@ function train_sparse_mkl(
         random_indices = randperm(q)[1:k0]
         β = zeros(q)
         β[random_indices] .= 1/k0
-
-        # uniform initialization
-        # β .= 1/q
-
         log("No warm start selected; initial random β = ", β)
     end
 
@@ -646,6 +648,8 @@ function train_sparse_mkl(
     list_alphas = Vector{Vector{Float64}}()
     list_betas  = Vector{Vector{Float64}}()
 
+    push!(list_betas, copy(β))  # keep initial β at t=0
+
     ###################################################################
     # Step 4: Enter the main optimization loop
     ###################################################################
@@ -666,11 +670,17 @@ function train_sparse_mkl(
             error("Unknown beta_method=$beta_method. Choose :hard, :proximal, or :gssp.")
         end
 
-        # 2) Recompute combined kernel
+        # 2) Recompute combined kernel (reflects updated β)
         K_combined = compute_combined_kernel(K_list, β)
         symmetrize!(K_combined)
 
-        # 3) Solve for α
+        # --- objective after β-update (before α-update) ----------------
+        obj_after_beta = compute_objective(α, y, K_combined, β, λ)
+        push!(obj_after_beta_seq, obj_after_beta)
+        log("Objective after β-update = ", obj_after_beta)
+        # --------------------------------------------------------------------
+
+        # 3) Solve for α (with the new combined kernel)
         if solver_type == :SMO
             α, _ = train_svm_smo!(K_combined, y, C; tol=tolerance, eps=1e-3, max_passes=5)
         elseif solver_type == :GUROBI
@@ -681,12 +691,14 @@ function train_sparse_mkl(
             error("Unknown solver_type=$solver_type. Choose :SMO, :GUROBI, or :LIBSVM.")
         end
 
-        # 4) Objective
+        # 4) Objective after α-update 
         obj = compute_objective(α, y, K_combined, β, λ)
-        log("Objective = ", obj)
+        push!(obj_after_alpha_seq, obj)                 # track post-α objective
+        log("Objective after α-update = ", obj)
         log("β = ", β)
         log("sum(α) = ", sum(α))
 
+        # Stopping logic 
         if obj_best - obj < tolerance
             non_decrease_count += 1
         else
@@ -702,15 +714,16 @@ function train_sparse_mkl(
             log("Returning the best solution found so far.")
             log("Final β = ", β_old)
             log("Final objective = ", obj_best)
-            return α_old, β_old, K_combined_old, obj_best, list_alphas, list_betas
+            return α_old, β_old, K_combined_old, obj_best, list_alphas, list_betas, obj_after_beta_seq, obj_after_alpha_seq 
         end
 
         push!(list_alphas, copy(α))
         push!(list_betas,  copy(β))
     end
 
-    return α, β, K_combined, obj_best, list_alphas, list_betas
+    # Return 
+    return α, β, K_combined, obj_best, list_alphas, list_betas, obj_after_beta_seq, obj_after_alpha_seq 
 end
 
-
 end # module SparseMKL
+
