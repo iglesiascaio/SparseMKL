@@ -77,6 +77,49 @@ kernels_spec = [
 ]
 
 
+# Large set of 50 kernels without changing kernel *types*
+#  - 1  linear
+#  - 18 polynomial  (degrees 2..10 × coef0 in {0.0, 1.0})
+#  - 12 rbf         (gamma = 2**e, e in {-6..5})
+#  - 12 sigmoid     (gamma in {0.01, 0.03, 0.1, 0.3} × coef0 in {-1.0, 0.0, 1.0})
+#  - 7  laplacian   (gamma = 2**e, e in {-5..1})
+# large_scale_kernels_spec = []
+
+# # 1) linear (1)
+# large_scale_kernels_spec.append({"type": "linear", "params": {}})
+
+# # 2) polynomial (18)
+# for degree in range(2, 11):  # 2..10
+#     for c0 in (0.0, 1.0):
+#         large_scale_kernels_spec.append(
+#             {"type": "poly", "params": {"degree": degree, "coef0": c0}}
+#         )
+
+# # 3) rbf (12): gammas = 2**(-6..5)
+# for e in range(-6, 6):  # -6..5
+#     large_scale_kernels_spec.append({"type": "rbf", "params": {"gamma": float(2.0**e)}})
+
+# # 4) sigmoid (12): 4 gammas × 3 coef0s
+# for gamma in (0.01, 0.03, 0.1, 0.3):
+#     for c0 in (-1.0, 0.0, 1.0):
+#         large_scale_kernels_spec.append(
+#             {"type": "sigmoid", "params": {"gamma": gamma, "coef0": c0}}
+#         )
+
+# # 5) laplacian (7): gammas = 2**(-5..1)
+# for e in range(-5, 2):  # -5..1
+#     large_scale_kernels_spec.append(
+#         {"type": "laplacian", "params": {"gamma": float(2.0**e)}}
+#     )
+
+# # Sanity check
+# assert len(large_scale_kernels_spec) == 50
+
+
+# use large scale
+# kernels_spec = large_scale_kernels_spec
+
+
 def compute_kernels(X_train, X_test, kernels_spec, jitter=1e-6):
     """
     Compute kernel matrices and add jitter for numerical stability.
@@ -269,18 +312,6 @@ def majority_vote_baseline(y_train, y_test):
 ###############################################################################
 # 7) Main experiment code
 ###############################################################################
-DATASETS = [
-    "iris",
-    "wine",
-    "breastcancer",
-    "ionosphere",
-    "spambase",
-    "banknote",
-    "heart",
-    "haberman",
-    "mammographic",
-    "parkinsons",
-]
 
 RESULT_COLUMNS = [
     "Dataset",
@@ -345,107 +376,126 @@ def run_experiment_for_dataset(ds_name):
     # Precompute kernel lists for entire train set
     K_train_list, K_test_list = compute_kernels(X_train, X_test, kernels_spec)
 
+    # --- placeholders so a method can fail without killing the whole dataset ---
+    mkl1_train_acc = mkl1_test_acc = mkl1_test_prec = mkl1_test_rec = mkl1_test_f1 = (
+        None
+    )
+    mkl2_train_acc = mkl2_test_acc = mkl2_test_prec = mkl2_test_rec = mkl2_test_f1 = (
+        None
+    )
+    mkl3_train_acc = mkl3_test_acc = mkl3_test_prec = mkl3_test_rec = mkl3_test_f1 = (
+        None
+    )
+    mkl1_train_time = mkl2_train_time = mkl3_train_time = None
+    betas_mkl1 = betas_mkl2 = betas_mkl3 = np.array([])
+    best_lam = None
+    svm_train_acc = svm_test_acc = svm_test_prec = svm_test_rec = svm_test_f1 = None
+    svm_train_time = None
+    best_C_svm = None
+    failed_methods = []  # track which ones failed
+
     # 1) EasyMKL
-    best_lam, best_cv_acc_easymkl = cross_validate_mkl(
-        X_train,
-        y_train,
-        kernels_spec,
-        MKLClass=EasyMKL,
-        param_name="lam",
-        param_values=lambdas_range,
-        n_folds=10,
-    )
-    print(f"[EasyMKL] best lam={best_lam}, CV acc={best_cv_acc_easymkl:.4f}")
-
-    # Measure final fit time
-    start_time = time.time()
-    mkl1 = EasyMKL(lam=best_lam, max_iter=500, tolerance=1e-5)
-    mkl1.fit(K_train_list, y_train.ravel())
-    end_time = time.time()
-    mkl1_train_time = end_time - start_time
-
-    y_train_pred1 = mkl1.predict([K.T for K in K_train_list])
-    y_test_pred1 = mkl1.predict([K.T for K in K_test_list])
-
-    mkl1_train_acc, mkl1_train_prec, mkl1_train_rec, mkl1_train_f1 = compute_metrics(
-        y_train, y_train_pred1
-    )
-    mkl1_test_acc, mkl1_test_prec, mkl1_test_rec, mkl1_test_f1 = compute_metrics(
-        y_test, y_test_pred1
-    )
-
     try:
-        betas_mkl1 = mkl1.solution.weights
-    except:
-        betas_mkl1 = np.array([])
+        best_lam, best_cv_acc_easymkl = cross_validate_mkl(
+            X_train,
+            y_train,
+            kernels_spec,
+            MKLClass=EasyMKL,
+            param_name="lam",
+            param_values=lambdas_range,
+            n_folds=10,
+        )
+        print(f"[EasyMKL] best lam={best_lam}, CV acc={best_cv_acc_easymkl:.4f}")
+
+        start_time = time.time()
+        mkl1 = EasyMKL(lam=best_lam, max_iter=500, tolerance=1e-5)
+        mkl1.fit(K_train_list, y_train.ravel())
+        end_time = time.time()
+        mkl1_train_time = end_time - start_time
+
+        y_train_pred1 = mkl1.predict([K.T for K in K_train_list])
+        y_test_pred1 = mkl1.predict([K.T for K in K_test_list])
+
+        mkl1_train_acc, _, _, _ = compute_metrics(y_train, y_train_pred1)
+        mkl1_test_acc, mkl1_test_prec, mkl1_test_rec, mkl1_test_f1 = compute_metrics(
+            y_test, y_test_pred1
+        )
+
+        try:
+            betas_mkl1 = mkl1.solution.weights
+        except:
+            betas_mkl1 = np.array([])
+    except Exception as _e:
+        failed_methods.append("EasyMKL")
 
     # 2) AverageMKL (no param)
-    _, best_cv_acc_avg = cross_validate_mkl(
-        X_train,
-        y_train,
-        kernels_spec,
-        MKLClass=AverageMKL,
-        param_name=None,
-        param_values=[None],
-        n_folds=10,
-    )
-    print(f"[AverageMKL] CV acc={best_cv_acc_avg:.4f}")
-
-    # Measure final fit time
-    start_time = time.time()
-    mkl2 = AverageMKL(max_iter=500, tolerance=1e-5)
-    mkl2.fit(K_train_list, y_train.ravel())
-    end_time = time.time()
-    mkl2_train_time = end_time - start_time
-
-    y_train_pred2 = mkl2.predict([K.T for K in K_train_list])
-    y_test_pred2 = mkl2.predict([K.T for K in K_test_list])
-
-    mkl2_train_acc, mkl2_train_prec, mkl2_train_rec, mkl2_train_f1 = compute_metrics(
-        y_train, y_train_pred2
-    )
-    mkl2_test_acc, mkl2_test_prec, mkl2_test_rec, mkl2_test_f1 = compute_metrics(
-        y_test, y_test_pred2
-    )
-
     try:
-        betas_mkl2 = mkl2.solution.weights
-    except:
-        betas_mkl2 = np.array([])
+        _, best_cv_acc_avg = cross_validate_mkl(
+            X_train,
+            y_train,
+            kernels_spec,
+            MKLClass=AverageMKL,
+            param_name=None,
+            param_values=[None],
+            n_folds=10,
+        )
+        print(f"[AverageMKL] CV acc={best_cv_acc_avg:.4f}")
+
+        start_time = time.time()
+        mkl2 = AverageMKL(max_iter=500, tolerance=1e-5)
+        mkl2.fit(K_train_list, y_train.ravel())
+        end_time = time.time()
+        mkl2_train_time = end_time - start_time
+
+        y_train_pred2 = mkl2.predict([K.T for K in K_train_list])
+        y_test_pred2 = mkl2.predict([K.T for K in K_test_list])
+
+        mkl2_train_acc, _, _, _ = compute_metrics(y_train, y_train_pred2)
+        mkl2_test_acc, mkl2_test_prec, mkl2_test_rec, mkl2_test_f1 = compute_metrics(
+            y_test, y_test_pred2
+        )
+
+        try:
+            betas_mkl2 = mkl2.solution.weights
+        except:
+            betas_mkl2 = np.array([])
+    except Exception as _e:
+        failed_methods.append("AverageMKL")
 
     # 3) CKA (no param)
-    _, best_cv_acc_cka = cross_validate_mkl(
-        X_train,
-        y_train,
-        kernels_spec,
-        MKLClass=CKA,
-        param_name=None,
-        param_values=[None],
-        n_folds=10,
-    )
-    print(f"[CKA] CV acc={best_cv_acc_cka:.4f}")
-
-    # Measure final fit time
-    start_time = time.time()
-    mkl3 = CKA(max_iter=500, tolerance=1e-5)
-    mkl3.fit(K_train_list, y_train)
-    end_time = time.time()
-    mkl3_train_time = end_time - start_time
-
-    y_train_pred3 = mkl3.predict([K.T for K in K_train_list])
-    y_test_pred3 = mkl3.predict([K.T for K in K_test_list])
-
-    mkl3_train_acc, mkl3_train_prec, mkl3_train_rec, mkl3_train_f1 = compute_metrics(
-        y_train, y_train_pred3
-    )
-    mkl3_test_acc, mkl3_test_prec, mkl3_test_rec, mkl3_test_f1 = compute_metrics(
-        y_test, y_test_pred3
-    )
-
     try:
-        betas_mkl3 = mkl3.solution.weights
-    except:
-        betas_mkl3 = np.array([])
+        print("Computing CKA...")
+        _, best_cv_acc_cka = cross_validate_mkl(
+            X_train,
+            y_train,
+            kernels_spec,
+            MKLClass=CKA,
+            param_name=None,
+            param_values=[None],
+            n_folds=10,
+        )
+        print(f"[CKA] CV acc={best_cv_acc_cka:.4f}")
+
+        start_time = time.time()
+        mkl3 = CKA(max_iter=500, tolerance=1e-5)
+        mkl3.fit(K_train_list, y_train)
+        end_time = time.time()
+        mkl3_train_time = end_time - start_time
+
+        y_train_pred3 = mkl3.predict([K.T for K in K_train_list])
+        y_test_pred3 = mkl3.predict([K.T for K in K_test_list])
+
+        mkl3_train_acc, _, _, _ = compute_metrics(y_train, y_train_pred3)
+        mkl3_test_acc, mkl3_test_prec, mkl3_test_rec, mkl3_test_f1 = compute_metrics(
+            y_test, y_test_pred3
+        )
+
+        try:
+            betas_mkl3 = mkl3.solution.weights
+        except:
+            betas_mkl3 = np.array([])
+    except Exception as _e:
+        failed_methods.append("CKA")
 
     # 4) Baseline
     y_test_pred_baseline = majority_vote_baseline(y_train, y_test)
@@ -454,31 +504,37 @@ def run_experiment_for_dataset(ds_name):
     )
 
     # 5) SVM cross-validation
-    best_C_svm, best_acc_svm = cross_validate_svm(
-        X_train, y_train, Cs=Cs_range, n_folds=10
-    )
-    print(f"[SVM] best C={best_C_svm}, CV acc={best_acc_svm:.4f}")
+    try:
+        best_C_svm, best_acc_svm = cross_validate_svm(
+            X_train, y_train, Cs=Cs_range, n_folds=10
+        )
+        print(f"[SVM] best C={best_C_svm}, CV acc={best_acc_svm:.4f}")
 
-    # Measure final fit time
-    start_time = time.time()
-    svm_clf = SVC(kernel="linear", C=best_C_svm)
-    svm_clf.fit(X_train, y_train)
-    end_time = time.time()
-    svm_train_time = end_time - start_time
+        start_time = time.time()
+        svm_clf = SVC(kernel="linear", C=best_C_svm)
+        svm_clf.fit(X_train, y_train)
+        end_time = time.time()
+        svm_train_time = end_time - start_time
 
-    y_train_pred_svm = svm_clf.predict(X_train)
-    y_test_pred_svm = svm_clf.predict(X_test)
+        y_train_pred_svm = svm_clf.predict(X_train)
+        y_test_pred_svm = svm_clf.predict(X_test)
 
-    svm_train_acc, _, _, _ = compute_metrics(y_train, y_train_pred_svm)
-    svm_test_acc, svm_test_prec, svm_test_rec, svm_test_f1 = compute_metrics(
-        y_test, y_test_pred_svm
-    )
+        svm_train_acc, _, _, _ = compute_metrics(y_train, y_train_pred_svm)
+        svm_test_acc, svm_test_prec, svm_test_rec, svm_test_f1 = compute_metrics(
+            y_test, y_test_pred_svm
+        )
+    except Exception as _e:
+        failed_methods.append("SVM")
 
     # 6) Prepare the result dict
     def betas_to_str(betas):
-        if betas.size == 0:
+        if betas is None or (hasattr(betas, "size") and betas.size == 0):
             return ""
         return ", ".join(f"{b:.4f}" for b in betas)
+
+    status_str = (
+        "Success" if not failed_methods else f"Partial ({', '.join(failed_methods)})"
+    )
 
     row = {
         "Dataset": ds_name,
@@ -523,7 +579,7 @@ def run_experiment_for_dataset(ds_name):
         "Betas_Algo1": betas_to_str(betas_mkl1),
         "Betas_Algo2": betas_to_str(betas_mkl2),
         "Betas_Algo3": betas_to_str(betas_mkl3),
-        "Status": "Success",
+        "Status": status_str,
     }
     return row
 
@@ -565,7 +621,7 @@ def main():
 
     results_df = pd.DataFrame(all_rows, columns=RESULT_COLUMNS)
 
-    out_csv = "results_mklpy.csv"
+    out_csv = "results_mklpy_benchmarks.csv"
     results_df.to_csv(out_csv, index=False)
     print(f"\n=== Results saved to {out_csv} ===\n")
 
