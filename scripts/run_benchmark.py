@@ -11,12 +11,12 @@ import sys
 
 sys.stdout.reconfigure(line_buffering=True)
 
-# 2) Include your get_data.jl file (which defines the module GetData)
+# 2) Include get_data.jl file (which defines the module GetData)
 Main.include("../data/get_data.jl")  # adjust path as needed
 
 
 ###############################################################################
-# 3) Wrapping your Julia get_dataset function in a Python function
+# 3) Wrapping Julia get_dataset function in a Python function
 ###############################################################################
 def get_julia_dataset(ds_name, frac=1.0, train_ratio=0.8, seed=123):
     """
