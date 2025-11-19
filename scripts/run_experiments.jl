@@ -71,13 +71,13 @@ end
 DATASETS = [
     :iris, 
     :wine, 
-    # :breastcancer,
+    :breastcancer,
     :ionosphere,
-    # :spambase,
-    # :banknote,
+    :spambase,
+    :banknote,
     :heart,
     :haberman,
-    # :mammographic,
+    :mammographic,
     :parkinsons,
 ]
 
@@ -97,9 +97,64 @@ kernels = [
     Dict(:type => "laplacian", :params => Dict(:gamma => 0.3)),
 ]
 
+## Large Scale experiment set up below ##
+
+################################################################################
+# Large set of 50 kernels (same types; varied parameters)
+#  - 1  linear
+#  - 18 polynomial  (degree = 2:10 × c ∈ {0.0, 1.0})
+#  - 12 rbf         (gamma = 2.0^e, e ∈ -6:5)
+#  - 12 sigmoid     (gamma ∈ {0.01, 0.03, 0.1, 0.3} × c0 ∈ {-1.0, 0.0, 1.0})
+#  - 7  laplacian   (gamma = 2.0^e, e ∈ -5:1)
+################################################################################
+# large_scale_kernels = Vector{Dict{Symbol, Any}}()
+
+# # 1) linear (1)
+# push!(large_scale_kernels, Dict(:type => "linear", :params => Dict()))
+
+# # 2) polynomial (18)
+# for degree in 2:10
+#     for c in (0.0, 1.0)
+#         push!(large_scale_kernels,
+#               Dict(:type => "polynomial",
+#                    :params => Dict(:degree => degree, :c => c)))
+#     end
+# end
+
+# # 3) rbf (12): gammas = 2.0^(-6:5)
+# for e in -6:5
+#     gamma = 2.0^e
+#     push!(large_scale_kernels,
+#           Dict(:type => "rbf", :params => Dict(:gamma => gamma)))
+# end
+
+# # 4) sigmoid (12): 4 gammas × 3 c0 values
+# for gamma in (0.01, 0.03, 0.1, 0.3)
+#     for c0 in (-1.0, 0.0, 1.0)
+#         push!(large_scale_kernels,
+#               Dict(:type => "sigmoid",
+#                    :params => Dict(:gamma => gamma, :c0 => c0)))
+#     end
+# end
+
+# # 5) laplacian (7): gammas = 2.0^(-5:1)
+# for e in -5:1
+#     gamma = 2.0^e
+#     push!(large_scale_kernels,
+#           Dict(:type => "laplacian", :params => Dict(:gamma => gamma)))
+# end
+
+# # Sanity check
+# @assert length(large_scale_kernels) == 50
+
+
+# # set kernels = large_scale_kernels
+# kernels = large_scale_kernels
+
 ################################################################################
 # Hyperparameters to search (for normal CV if warm_start=false)
 ################################################################################
+# Cs_range = [1.0, 2.0, 5.0, 10.0,] ## large scale experiment range for Cs
 Cs_range = [5.0, 10.0, 50.0, 100.0,]
 k0_range = [1, 2, 3, 4, 5,] 
 lambdas_range = [0.01, 0.1, 1.0, 10.0, 100.0]
@@ -226,7 +281,8 @@ function cross_validate_mkl(X, y, kernels;
                     K_list_val   = compute_kernels(X_tr, X_val, kernels)
 
 
-                    α_tmp, β_tmp, K_comb_tmp, _, _, _ = train_sparse_mkl(
+                    # ignore extra return values with underscores
+                    α_tmp, β_tmp, K_comb_tmp, _, _, _, _, _ = train_sparse_mkl(
                         X_tr, y_tr, c_val, K_list_train, lam_val;
                         max_iter=max_iter,
                         tolerance=tolerance,
@@ -370,7 +426,7 @@ for dataset in DATASETS
     K_list_test  = compute_kernels(X_train, X_test,  kernels)
 
     t0 = time()
-    α, β, K_combined, obj, _, _ = train_sparse_mkl(
+    α, β, K_combined, obj, list_alphas, list_betas, obj_beta_seq, obj_alpha_seq = train_sparse_mkl(
         X_train, y_train, best_C_mkl, K_list_train, best_lam_mkl;
         max_iter=max_iter,
         tolerance=tolerance,
@@ -471,7 +527,7 @@ end
 # Save and display results
 ################################################################################
 println("Start writing results to CSV file")
-CSV.write("results.csv", results)
+CSV.write("results_SMKL.csv", results)
 println("Results written to results.csv")
 
 # Filter successful datasets
