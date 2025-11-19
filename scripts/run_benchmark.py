@@ -77,6 +77,7 @@ kernels_spec = [
 ]
 
 
+## Large Scale experiment set up below ##
 # Large set of 50 kernels without changing kernel *types*
 #  - 1  linear
 #  - 18 polynomial  (degrees 2..10 × coef0 in {0.0, 1.0})
