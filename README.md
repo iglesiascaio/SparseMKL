@@ -93,11 +93,15 @@ Moreover, there is also a script `run_benchmark.py` for running other Multiple K
 If you use this code, please cite the accompanying manuscript:
 
 ```bibtex
-@unpublished{bertsimas2025sparseMKL,
-  author  = {Dimitris Bertsimas and Caio de Pr{\'o}spero Iglesias and Nicholas A. G. Johnson},
-  title   = {Sparse Multiple Kernel Learning: Alternating Best Response and Semidefinite Relaxations},
-  note    = {Manuscript under review},
-  year    = {2025}
+@article{
+bertsimas2025sparse,
+title={Sparse Multiple Kernel Learning: Alternating Best Response and Semidefinite Relaxations},
+author={Dimitris Bertsimas and Caio de Pr{\'o}spero Iglesias and Nicholas A. G. Johnson},
+journal={Transactions on Machine Learning Research},
+issn={2835-8856},
+year={2025},
+url={https://openreview.net/forum?id=Y5icwFwkyh},
+note={}
 }
 ```
 
